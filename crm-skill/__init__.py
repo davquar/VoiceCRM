@@ -1,5 +1,6 @@
 from mycroft import MycroftSkill, intent_file_handler
 from mycroft.util import parse
+from itertools import permutations
 
 contacts = [
     {
@@ -7,8 +8,10 @@ contacts = [
         "surname": "red",
         "birth_date": "1996-01-01",
         "activities": []
+        "reminders": []
     }
 ]
+
 
 def get_contact(name, surname):
     return list(filter(lambda contact: contact["name"] == name and contact["surname"] == surname, contacts))
@@ -18,6 +21,30 @@ def add_contact(name, surname):
         "name": name,
         "surname": surname
     })
+
+
+
+
+def find_contacts(s):
+    list_contacts = []
+    list_name_surname = name_surname(s)
+    for l in list_name_surname :  
+        list_contacts += get_contact(l[0], l[1])
+    return list_contacts
+
+
+
+def name_surname(s):
+    ''' funzione per restituire tutte le possobili combinazioni di nome-cognome'''
+    perms = list(permutations(s.split(' ')))
+    res = []
+    for el in perms:
+        for i in range(len(el)-1):
+            res.append([' '.join(el[:i+1]),' '.join(el[i+1:])])
+    return res
+
+
+
 
 class VoiceCRM(MycroftSkill):
     def __init__(self):
@@ -49,6 +76,34 @@ class VoiceCRM(MycroftSkill):
         self.speak(f"{birth_date}, done")
 
         self.speak("Great! Tell me if you need more.")
+
+
+    @intent_file_handler('add-reminder.intent')
+    def handle_new_reminder(self, message):
+        surname_name = self.get_response("About whom?")
+        list_contacts = find_contacts(surname_name)
+        if( len(list_contacts<=0))
+        {  
+           #     task1 
+        }
+        
+        elif( len(list_contacts==1))
+        {   
+             activity = self.get_response("What should I remind you?")
+
+             date = self.get_response("When?")
+        }
+        else()
+        {
+             #da vedere, caso in cui si trovano piu contatti
+        }
+
+
+
+        
+
+
+
 
 def create_skill():
     return VoiceCRM()
