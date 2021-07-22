@@ -40,6 +40,9 @@ def name_surname(s):
             res.append([' '.join(el[:i+1]),' '.join(el[i+1:])])
     return res
 
+def add_reminder(contact,act,date):
+    contact['reminders'].append({'activity':act,'date':date})
+
 class VoiceCRM(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
@@ -71,26 +74,26 @@ class VoiceCRM(MycroftSkill):
 
         self.speak("Great! Tell me if you need more.")
 
-
     @intent_file_handler('add-reminder.intent')
     def handle_new_reminder(self, message):
         surname_name = self.get_response("About whom?")
-        list_contacts = find_contacts(surname_name)
-        if( len(list_contacts<=0))
-        {  
-           #     task1 
-        }
-        
-        elif( len(list_contacts==1))
-        {   
-             activity = self.get_response("What should I remind you?")
+        list_contacts = find_contacts(surname_name) # we get all possible contact
+        if len(list_contacts)<=0:
+            # the contact does not exist. We create it, calling task 1, and then we continue adding the reminder
+            should_proceed = self.ask_yesno(f"The contact you call not exist. So, do you want to add it?")
+            if should_proceed == 'yes':
+                handle_new_contact(message)
+                list_contacts = find_contacts(surname_name) # we get the contact
+            else: return
+        elif len(list_contacts)>1:
+            # there are more than one contact. We select the final contact by the set
+            return
 
-             date = self.get_response("When?")
-        }
-        else()
-        {
-             #da vedere, caso in cui si trovano piu contatti
-        }
+        activity = self.get_response("What should I remind you?")
+        date = parse.extract_datetime(self.get_response("When should I remind you?"))
+        add_reminder(list_contacts[0],activity,date)
+
+        self.speak("Great! I have added your reminder for {}".format(surname_name))
 
 def create_skill():
     return VoiceCRM()
