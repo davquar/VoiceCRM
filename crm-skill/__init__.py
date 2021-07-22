@@ -7,44 +7,38 @@ contacts = [
         "name": "john",
         "surname": "red",
         "birth_date": "1996-01-01",
-        "activities": []
+        "activities": [],
         "reminders": []
     }
 ]
 
-
 def get_contact(name, surname):
+    ''' return all contacts with name and surname '''
     return list(filter(lambda contact: contact["name"] == name and contact["surname"] == surname, contacts))
 
 def add_contact(name, surname):
+    ''' create new contact with name and surname '''
     contacts.append({
         "name": name,
         "surname": surname
     })
 
-
-
-
 def find_contacts(s):
+    ''' return all contact with name/surname or surname-name s (name and surname are divided by space) '''
     list_contacts = []
     list_name_surname = name_surname(s)
     for l in list_name_surname :  
         list_contacts += get_contact(l[0], l[1])
     return list_contacts
 
-
-
 def name_surname(s):
-    ''' funzione per restituire tutte le possobili combinazioni di nome-cognome'''
+    ''' return all possible combination of name-surname'''
     perms = list(permutations(s.split(' ')))
     res = []
     for el in perms:
         for i in range(len(el)-1):
             res.append([' '.join(el[:i+1]),' '.join(el[i+1:])])
     return res
-
-
-
 
 class VoiceCRM(MycroftSkill):
     def __init__(self):
@@ -97,13 +91,6 @@ class VoiceCRM(MycroftSkill):
         {
              #da vedere, caso in cui si trovano piu contatti
         }
-
-
-
-        
-
-
-
 
 def create_skill():
     return VoiceCRM()
