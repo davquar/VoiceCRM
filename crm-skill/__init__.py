@@ -5,7 +5,7 @@ from itertools import permutations
 contacts = [
     {
         "name": "john",
-        "surname": "red",
+        "surname": "peter",
         "birth_date": "1996-01-01",
         "activities": [],
         "reminders": []
@@ -82,7 +82,7 @@ class VoiceCRM(MycroftSkill):
             # the contact does not exist. We create it, calling task 1, and then we continue adding the reminder
             should_proceed = self.ask_yesno(f"The contact you call not exist. So, do you want to add it?")
             if should_proceed == 'yes':
-                handle_new_contact(message)
+                self.handle_new_contact(message)
                 list_contacts = find_contacts(surname_name) # we get the contact
             else: return
         elif len(list_contacts)>1:
@@ -94,6 +94,30 @@ class VoiceCRM(MycroftSkill):
         add_reminder(list_contacts[0],activity,date)
 
         self.speak("Great! I have added your reminder for {}".format(surname_name))
+
+    @intent_file_handler("new-activity.intent")
+    def handle_new_activity(self, message):
+        person = self.get_response("whith whom you have done this activity?")
+        list_contacts = find_contacts(person)
+        if len(list_contacts) == 0:
+            should_proceed = self.ask_yesno(f"Hey, I don't know {person}. Do you want to add them?")
+            if should_proceed == 'yes':
+                self.handle_new_contact(message)
+                contact = find_contacts(person)
+            else:
+                self.speak("Ok, I'm here if you need.")
+                return
+        else:
+            contact = list_contacts[0]
+        
+        activity = self.get_response("Ok, what have you done with them?")
+        date = parse.extract_datetime(self.get_response("Perfect, when did you do it?"))
+        contact["activities"].append({
+            "activity": activity,
+            "date": date
+        })
+    
+        self.speak("Awesome, done!")
 
 def create_skill():
     return VoiceCRM()
