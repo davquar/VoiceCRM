@@ -97,7 +97,10 @@ class VoiceCRM(MycroftSkill):
 
     @intent_file_handler("new-activity.intent")
     def handle_new_activity(self, message):
-        person = self.get_response("whith whom you have done this activity?")
+        if message.data.get("person") != None:
+            person = message.data.get("person")
+        else:
+            person = self.get_response("whith whom you have done this activity?")
         list_contacts = find_contacts(person)
         if len(list_contacts) == 0:
             should_proceed = self.ask_yesno(f"Hey, I don't know {person}. Do you want to add them?")
