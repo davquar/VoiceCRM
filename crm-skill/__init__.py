@@ -49,6 +49,7 @@ class VoiceCRM(MycroftSkill):
 
     @intent_file_handler('new-contact.intent')
     def handle_new_contact(self, message):
+        ''' handler per creare un nuovo contatto '''
         surname = self.get_response("what is the surname?")
         name = self.get_response("okay, the name?")
         self.log.info(get_contact(name, surname))
@@ -76,17 +77,19 @@ class VoiceCRM(MycroftSkill):
 
     @intent_file_handler('add-reminder.intent')
     def handle_new_reminder(self, message):
+        ''' handler per creare un nuovo reminder '''
         surname_name = self.get_response("About whom?")
         list_contacts = find_contacts(surname_name) # we get all possible contact
         if len(list_contacts)<=0:
             # the contact does not exist. We create it, calling task 1, and then we continue adding the reminder
             should_proceed = self.ask_yesno(f"The contact you call not exist. So, do you want to add it?")
             if should_proceed == 'yes':
-                handle_new_contact(message)
+                self.handle_new_contact(message)
                 list_contacts = find_contacts(surname_name) # we get the contact
             else: return
         elif len(list_contacts)>1:
             # there are more than one contact. We select the final contact by the set
+            # the final contact is set into list_contacts[0]
             return
 
         activity = self.get_response("What should I remind you?")
@@ -94,6 +97,41 @@ class VoiceCRM(MycroftSkill):
         add_reminder(list_contacts[0],activity,date)
 
         self.speak("Great! I have added your reminder for {}".format(surname_name))
+
+    @intent_file_handler('last-activities.intent')
+    def handle_last_activities(self, message):
+        surname_name = self.get_response("About whom?")
+        list_contacts = find_contacts(surname_name) # we get all possible contact
+        if len(list_contacts)<=0:
+            # the contact does not exist. We exit
+            self.speak("{} does not exist! Tell me another command".format(surname_name))
+            return
+        elif len(list_contacts)>1:
+            # there are more than one contact. We select the final contact by the set
+            # the final contact is set into list_contacts[0]
+            return
+        if len(list_contacts[0]['activities'])==0:
+            self.speak("You have not any activities with {}. Ok, tell me another command".format(surname_name))
+            return
+        numberOfActivities=len(list_contacts[0]['activities'])-1 # the position in the list of the activity I have to read now
+        nextStep='repeat' # variable to know if the user want to continue, repeat the latest 5 activities or continue in the past
+        while nextStep!='exit':
+            cont=0 # number of activities read in this step (from 0 to 5)
+            for i in range(5):
+                cont+=1 # I read an activity
+                self.speak("In date {}. {}".format(list_contacts[0]['activities'][numberOfActivities][0],list_contacts[0]['activities'][numberOfActivities][1]))
+                numberOfActivities-=1
+                if numberOfActivities<0:
+                    break # exit from the for
+            # now I ask the user if he want to repeat these activities or exit or continue reading
+            nextStep=None
+            while nextStep not in ['repeat', 'continue', 'exit']:
+                nextStep = self.get_response("What will I have to do? Repeat, continue or exit?")
+                if nextStep=='repeat':
+                    nextStep+=cont
+        self.speak("Great! I have done!")
+
+
 
 def create_skill():
     return VoiceCRM()
