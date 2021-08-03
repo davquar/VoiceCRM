@@ -101,6 +101,9 @@ class VoiceCRM(MycroftSkill):
     @intent_file_handler('last-activities.intent')
     def handle_last_activities(self, message):
         surname_name = self.get_response("About whom?")
+        if surname_name==None:
+            self.speak('TROPPO TEMPO')
+            return
         list_contacts = find_contacts(surname_name) # we get all possible contact
         if len(list_contacts)<=0:
             # the contact does not exist. We exit
