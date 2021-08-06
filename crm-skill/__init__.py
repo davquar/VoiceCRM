@@ -195,30 +195,62 @@ class VoiceCRM(MycroftSkill):
 
     @intent_file_handler("new-activity.intent")
     def handle_new_activity(self, message):
-        if message.data.get("person") != None:
-            person = message.data.get("person")
-        else:
-            person = self.get_response("whith whom you have done this activity?")
-        list_contacts = find_contacts(person)
-        if len(list_contacts) == 0:
-            should_proceed = self.ask_yesno(f"Hey, I don't know {person}. Do you want to add them?")
-            if should_proceed == 'yes':
-                self.handle_new_contact(message)
-                contact = find_contacts(person)
-            else:
-                self.speak("Ok, I'm here if you need.")
-                return
-        else:
-            contact = list_contacts[0]
-        
-        activity = self.get_response("Ok, what have you done with them?")
-        date = parse.extract_datetime(self.get_response("Perfect, when did you do it?"))
-        contact["activities"].append({
-            "activity": activity,
-            "date": date
-        })
-    
-        self.speak("Awesome, done!")
+        done = False
+        state = 0
+        while not done:
+            if state == 0:
+                if message.data.get("person") != None:
+                    person = message.data.get("person")
+                else:
+                    person, action, state = self.wrap_get_response("whith whom you have done this activity?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT})
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action == ACTION_REPEAT:
+                        continue
+
+                list_contacts = find_contacts(person)
+                if len(list_contacts) == 0:
+                    should_proceed = self.ask_yesno(f"Hey, I don't know {person}. Do you want to add them?")
+                    if should_proceed == 'yes':
+                        self.handle_new_contact(message)
+                        contact = find_contacts(person)
+                    else:
+                        self.speak("Ok, I'm here if you need.")
+                        return
+                else:
+                    contact = list_contacts[0]
+            
+            if state == 1:
+                activity, action, state = self.wrap_get_response("Ok, what have you done with them?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
+                if action == ACTION_STOP:
+                    self.speak_dialog("finishing")
+                    return
+                if action == ACTION_BACK or action == ACTION_REPEAT:
+                    continue
+
+            if state == 2:
+                utt, action, state = self.wrap_get_response("Perfect, when did you do it?", state, allowed_actions={ACTION_STOP, ACTION_BACK, ACTION_REPEAT})
+                if action == ACTION_STOP:
+                    self.speak_dialog("finishing")
+                    return
+                if action == ACTION_BACK or action == ACTION_REPEAT:
+                    continue
+
+                date = parse.extract_datetime(utt)
+                if date is None:
+                    # no datetime found in the utterance --> repeat
+                    self.speak("Hmm, that's not a date")
+                    state -= 1
+                    continue
+
+                contact["activities"].append({
+                    "activity": activity,
+                    "date": date
+                })
+            
+                self.speak("Awesome, done!")
+                done = True
 
     @intent_file_handler('last-activities.intent')
     def handle_last_activities(self, message):
