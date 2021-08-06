@@ -49,32 +49,80 @@ class VoiceCRM(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
 
+    def wrap_get_response(self, question, state, exact_match=False, allowed_actions={"stop", "repeat", "back"}):
+        '''
+        Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
+        Returns (utterance; user-specified action; next state, based on the action)
+        '''
+        utt = self.get_response(question)
+        if allowed_actions is not None:
+            for action in allowed_actions:
+                if self.voc_match(utt, action, exact=exact_match):
+                    state = state - 1 if action == "back" else state
+                    return utt, action, state
+        return utt, None, state + 1
+
     @intent_file_handler('new-contact.intent')
     def handle_new_contact(self, message):
-        surname = self.get_response("what is the surname?")
-        name = self.get_response("okay, the name?")
-        self.log.info(get_contact(name, surname))
-        if len(get_contact(name, surname)) > 0:
-           self.speak(f"You already have {name} {surname}. I'll stop here.")
-           return
-        
-        add_contact(name, surname)
-        should_proceed = self.ask_yesno(f"Okay, I've added {name} {surname}. Do you want to add other details to them?")
-        if should_proceed == "no":
-            self.speak("Great! I'll stop here.")
-            return
+        done = False
+        state = 0
+        while not done:
+            self.log.info(f"STATE: {state}")
+            if state == 0:
+                surname, action, state = self.wrap_get_response("what is the surname?", state, allowed_actions={"stop", "repeat"})
+                if action == "stop":
+                    self.speak("Great! I'll stop here.")
+                    return
 
-        contact = get_contact(name, surname)[0]
-    
-        gender = self.get_response("What is the gender?", num_retries=1)
-        contact["gender"] = gender
-        self.speak(f"{gender}, done")
+            if state == 1:
+                name, action, state = self.wrap_get_response("okay, the name?", state, allowed_actions={"stop", "repeat", "back"})
+                self.log.info(get_contact(name, surname))
+                if action == "repeat" or action == "back":
+                    continue
+                elif action == "stop":
+                    self.speak("Great! I'll stop here.")
+                    return
+                if len(get_contact(name, surname)) > 0:
+                    self.speak(f"You already have {name} {surname}. I'll stop here.")
+                    return
 
-        birth_date = self.get_response("Birth date?", num_retries=1)
-        contact["birth-date"] = parse.extract_datetime(birth_date)
-        self.speak(f"{birth_date}, done")
+            if state == 2:
+                add_contact(name, surname)
+                state += 1
 
-        self.speak("Great! Tell me if you need more.")
+            if state == 3:
+                should_proceed = self.ask_yesno(f"Okay, I've added {name} {surname}. Do you want to add other details to them?")
+                if should_proceed == "no":
+                    self.speak("Great! I'll stop here.")
+                    return
+                contact = get_contact(name, surname)[0]
+                state += 1
+
+            if state == 4:
+                gender, action, state = self.wrap_get_response("What is the gender?", state, allowed_actions={"stop", "repeat"})
+                if action is None:
+                    contact["gender"] = gender
+                    self.speak(f"{gender}, done")
+                elif action == "stop":
+                    self.speak("Great! I'll stop here.")
+                    return
+                elif action == "repeat":
+                    continue
+
+            if state == 5:
+                birth_date, action, state = self.wrap_get_response("Birth date?", state, allowed_actions={"stop", "repeat", "back"})
+                if action is None:
+                    contact["birth-date"] = parse.extract_datetime(birth_date)
+                    self.speak(f"{birth_date}, done")
+                elif action == "stop":
+                    self.speak("Great! I'll stop here.")
+                    return
+                elif action == "repeat" or action == "back":
+                    continue
+
+            if state == 6:
+                self.speak("Great! Tell me if you need more.")
+                done = True
 
     @intent_file_handler('add-reminder.intent')
     def handle_new_reminder(self, message):
