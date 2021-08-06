@@ -2,6 +2,8 @@ from mycroft import MycroftSkill, intent_file_handler
 from mycroft.util import parse
 from itertools import permutations
 
+from .constants import *
+
 contacts = [
     {
         "name": "jo",
@@ -49,7 +51,7 @@ class VoiceCRM(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
 
-    def wrap_get_response(self, question, state, exact_match=False, allowed_actions={"stop", "repeat", "back"}):
+    def wrap_get_response(self, question, state, exact_match=False, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK}):
         '''
         Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
         Returns (utterance; user-specified action; next state, based on the action)
@@ -58,7 +60,7 @@ class VoiceCRM(MycroftSkill):
         if allowed_actions is not None:
             for action in allowed_actions:
                 if self.voc_match(utt, action, exact=exact_match):
-                    state = state - 1 if action == "back" else state
+                    state = state - 1 if action == ACTION_BACK else state
                     return utt, action, state
         return utt, None, state + 1
 
@@ -67,20 +69,19 @@ class VoiceCRM(MycroftSkill):
         done = False
         state = 0
         while not done:
-            self.log.info(f"STATE: {state}")
             if state == 0:
-                surname, action, state = self.wrap_get_response("what is the surname?", state, allowed_actions={"stop", "repeat"})
-                if action == "stop":
-                    self.speak("Great! I'll stop here.")
+                surname, action, state = self.wrap_get_response("what is the surname?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT})
+                if action == ACTION_STOP:
+                    self.speak_dialog("finishing")
                     return
 
             if state == 1:
-                name, action, state = self.wrap_get_response("okay, the name?", state, allowed_actions={"stop", "repeat", "back"})
+                name, action, state = self.wrap_get_response("okay, the name?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
                 self.log.info(get_contact(name, surname))
-                if action == "repeat" or action == "back":
+                if action == ACTION_REPEAT or action == ACTION_BACK:
                     continue
-                elif action == "stop":
-                    self.speak("Great! I'll stop here.")
+                elif action == ACTION_STOP:
+                    self.speak_dialog("finishing")
                     return
                 if len(get_contact(name, surname)) > 0:
                     self.speak(f"You already have {name} {surname}. I'll stop here.")
@@ -93,35 +94,35 @@ class VoiceCRM(MycroftSkill):
             if state == 3:
                 should_proceed = self.ask_yesno(f"Okay, I've added {name} {surname}. Do you want to add other details to them?")
                 if should_proceed == "no":
-                    self.speak("Great! I'll stop here.")
+                    self.speak_dialog("finishing")
                     return
                 contact = get_contact(name, surname)[0]
                 state += 1
 
             if state == 4:
-                gender, action, state = self.wrap_get_response("What is the gender?", state, allowed_actions={"stop", "repeat"})
+                gender, action, state = self.wrap_get_response("What is the gender?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT})
                 if action is None:
                     contact["gender"] = gender
                     self.speak(f"{gender}, done")
-                elif action == "stop":
-                    self.speak("Great! I'll stop here.")
+                elif action == ACTION_STOP:
+                    self.speak_dialog("finishing")
                     return
-                elif action == "repeat":
+                elif action == ACTION_REPEAT:
                     continue
 
             if state == 5:
-                birth_date, action, state = self.wrap_get_response("Birth date?", state, allowed_actions={"stop", "repeat", "back"})
+                birth_date, action, state = self.wrap_get_response("Birth date?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
                 if action is None:
                     contact["birth-date"] = parse.extract_datetime(birth_date)
                     self.speak(f"{birth_date}, done")
-                elif action == "stop":
-                    self.speak("Great! I'll stop here.")
+                elif action == ACTION_STOP:
+                    self.speak_dialog("finishing")
                     return
-                elif action == "repeat" or action == "back":
+                elif action == ACTION_REPEAT or action == ACTION_BACK:
                     continue
 
             if state == 6:
-                self.speak("Great! Tell me if you need more.")
+                self.speak_dialog("finishing")
                 done = True
 
     @intent_file_handler('add-reminder.intent')
