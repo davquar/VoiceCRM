@@ -13,6 +13,13 @@ contacts = [
                         {"activity": "cinema", "date": "2021-03-01"}, 
                         {"activity": "nada","date": "2021-04-04"} ],
         "reminders": []
+    },
+    {
+        "name": "joe",
+        "surname": "peter",
+        "birth_date": "1996-02-02",
+        "activities": [],
+        "reminders": []
     }
 ]
 
@@ -51,7 +58,7 @@ class VoiceCRM(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
 
-    def wrap_get_response(self, question, state, exact_match=False, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK}):
+    def wrap_get_response(self, question, state, exact_match=False, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}):
         '''
         Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
         Returns (utterance; user-specified action; next state, based on the action)
@@ -135,24 +142,56 @@ class VoiceCRM(MycroftSkill):
 
     @intent_file_handler('add-reminder.intent')
     def handle_new_reminder(self, message):
-        surname_name = self.get_response("About whom?")
-        list_contacts = find_contacts(surname_name) # we get all possible contact
-        if len(list_contacts)<=0:
-            # the contact does not exist. We create it, calling task 1, and then we continue adding the reminder
-            should_proceed = self.ask_yesno(f"The contact you call not exist. So, do you want to add it?")
-            if should_proceed == 'yes':
-                self.handle_new_contact(message)
-                list_contacts = find_contacts(surname_name) # we get the contact
-            else: return
-        elif len(list_contacts)>1:
-            # there are more than one contact. We select the final contact by the set
-            return
+        done = False
+        state = 0
+        while not done:
+            self.log.info("STATE: {}".format(state))
+            if state == 0:
+                surname_name, action, state = self.wrap_get_response("About whom?", state, allowed_actions={ACTION_REPEAT, ACTION_STOP})
+                if action == ACTION_STOP:
+                    self.speak_dialog("finishing")
+                    return
+                if action == ACTION_REPEAT:
+                    continue
 
-        activity = self.get_response("What should I remind you?")
-        date = parse.extract_datetime(self.get_response("When should I remind you?"))
-        add_reminder(list_contacts[0],activity,date)
+                list_contacts = find_contacts(surname_name) # we get all possible contact
+                if len(list_contacts)<=0:
+                    # the contact does not exist. We create it, calling task 1, and then we continue adding the reminder
+                    should_proceed = self.ask_yesno(f"The contact you call not exist. So, do you want to add it?")
+                    if should_proceed == 'yes':
+                        self.handle_new_contact(message)
+                        list_contacts = find_contacts(surname_name) # we get the contact
+                    else: return
+                elif len(list_contacts)>1:
+                    # there are more than one contact. We select the final contact by the set
+                    return
 
-        self.speak("Great! I have added your reminder for {}".format(surname_name))
+            if state == 1:
+                activity, action, state = self.wrap_get_response("What should I remind you?", state, allowed_actions={ACTION_STOP, ACTION_BACK, ACTION_REPEAT})
+                if action == ACTION_STOP:
+                    self.speak_dialog("finishing")
+                    return
+                if action == ACTION_REPEAT or action == ACTION_BACK:
+                    self.log.info("SAID REPEAT OR BACK!!")
+                    continue
+                
+            if state == 2:
+                utt, action, state = self.wrap_get_response("When should I remind it to you?", state, allowed_actions={ACTION_STOP, ACTION_BACK, ACTION_REPEAT})
+                if action == ACTION_STOP:
+                    self.speak_dialog("finishing")
+                    return
+                if action == ACTION_REPEAT or action == ACTION_BACK:
+                    continue
+
+                date = parse.extract_datetime(utt)
+                if date is None:
+                    # no datetime found in the utterance --> repeat
+                    self.speak("Hmm, that's not a date")
+                    state -= 1
+                    continue
+                add_reminder(list_contacts[0], activity, date)
+                self.speak("Great! I have added your reminder for {}".format(surname_name))
+                done = True
 
     @intent_file_handler("new-activity.intent")
     def handle_new_activity(self, message):
