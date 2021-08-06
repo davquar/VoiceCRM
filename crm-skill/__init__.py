@@ -8,6 +8,7 @@ contacts = [
     {
         "name": "jo",
         "surname": "peter",
+        "nickname": "baubau",
         "birth_date": "1996-01-01",
         "activities": [ {"activity": "bar", "date": "2021-05-04"},
                         {"activity": "cinema", "date": "2021-03-01"}, 
@@ -27,6 +28,10 @@ def get_contact(name, surname):
     ''' return all contacts with name and surname '''
     return list(filter(lambda contact: contact["name"] == name and contact["surname"] == surname, contacts))
 
+def get_contact_wnick(name, surname, nickname):
+    ''' return all contacts with name, surname and nickname '''
+    return list(filter(lambda contact: contact["name"] == name and contact["surname"] == surname and contact["nickname"] == nickname, contacts))
+
 def add_contact(name, surname):
     ''' create new contact with name and surname '''
     contacts.append({
@@ -42,8 +47,25 @@ def find_contacts(s):
         list_contacts += get_contact(l[0], l[1])
     return list_contacts
 
+def find_contacts_wnick(s):
+    list_contacts = []
+    list_name_surname = name_surname_nick(s)
+    for l in list_name_surname :  
+        list_contacts += get_contact_wnick(l[0], l[1], l[2])
+    return list_contacts
+
 def name_surname(s):
     ''' return all possible combination of name-surname'''
+    perms = list(permutations(s.split(' ')))
+    res = []
+    for el in perms:
+        for i in range(len(el)-1):
+            res.append([' '.join(el[:i+1]),' '.join(el[i+1:])])
+    return res
+
+'''da fare'''
+def name_surname_nick(s):
+    ''' return all possible combination of name-surname-nick'''
     perms = list(permutations(s.split(' ')))
     res = []
     for el in perms:
@@ -135,6 +157,13 @@ class VoiceCRM(MycroftSkill):
                     return
                 else:
                     continue
+                    
+                    
+             '''da rivedere se nickname è opzionale o no. Se si, chiede se ha un nickname, se non lo ha il campo rimane vuoto'''
+             '''vedere anche se il nickname è gia usato da altro contatto'''
+              '''nickname = self.get_response("What is the nickname?", num_retries=1)
+              contact["nickname"] = nickname
+              self.speak(f"{nickname}, done")'''
 
             if state == 6:
                 self.speak_dialog("finishing")
@@ -163,8 +192,25 @@ class VoiceCRM(MycroftSkill):
                         list_contacts = find_contacts(surname_name) # we get the contact
                     else: return
                 elif len(list_contacts)>1:
-                    # there are more than one contact. We select the final contact by the set
-                    return
+                    self.speak(f"I have found {len(list_contacts)} contacts that could satisfy your request")
+                    flag=0
+                    for i in range(len(list_contacts)):
+                        if (list_contacts[i]['nickname'] is None):
+                            identikit='no'
+                        else:
+                            identikit = self.ask_yesno(f'Did you mean {surname_name}, {list_contacts[i]['nickname']}?')
+                        if identikit == 'yes':
+                            self.speak_dialog('Ok, I get it')
+                            list_contacts[0] = list_contacts[i]
+                            flag=1
+                            break
+                        elif identikit == 'no':
+                            self.speak_dialog('')
+                        else:
+                            self.speak_dialog('')
+                    if flag==0
+                        self.speak_dialog('sorry I did not find your contact')
+                        return
 
             if state == 1:
                 activity, action, state = self.wrap_get_response("What should I remind you?", state, allowed_actions={ACTION_STOP, ACTION_BACK, ACTION_REPEAT})
@@ -208,7 +254,6 @@ class VoiceCRM(MycroftSkill):
                         return
                     if action == ACTION_REPEAT:
                         continue
-
                 list_contacts = find_contacts(person)
                 if len(list_contacts) == 0:
                     should_proceed = self.ask_yesno(f"Hey, I don't know {person}. Do you want to add them?")
@@ -217,6 +262,26 @@ class VoiceCRM(MycroftSkill):
                         contact = find_contacts(person)
                     else:
                         self.speak("Ok, I'm here if you need.")
+                        return
+                elif len(list_contacts)>1:
+                    self.speak(f"I have found {len(list_contacts)} contacts that could satisfy your request")
+                    flag=0
+                    for i in range(len(list_contacts)):
+                        if (list_contacts[i]['nickname'] is None):
+                            identikit='no'
+                        else:
+                            identikit = self.ask_yesno(f'Did you mean {person}, {list_contacts[i]['nickname']}?')
+                        if identikit == 'yes':
+                            self.speak_dialog('Ok, I get it')
+                            contact = list_contacts[i]
+                            flag=1
+                            break
+                        elif identikit == 'no':
+                            self.speak_dialog('')
+                        else:
+                            self.speak_dialog('')
+                    if flag==0
+                        self.speak_dialog('sorry I did not find your contact')
                         return
                 else:
                     contact = list_contacts[0]
@@ -271,9 +336,25 @@ class VoiceCRM(MycroftSkill):
                     self.speak("I don't know {}".format(surname_name))
                     return
                 elif len(list_contacts)>1:
-                    # there are more than one contact. We select the final contact by the set
-                    # the final contact is set into list_contacts[0]
-                    return
+                    self.speak(f"I have found {len(list_contacts)} contacts that could satisfy your request")
+                    flag=0
+                    for i in range(len(list_contacts)):
+                        if (list_contacts[i]['nickname'] is None):
+                            identikit='no'
+                        else:
+                            identikit = self.ask_yesno(f'Did you mean {surname_name}, {list_contacts[i]['nickname']}?')
+                        if identikit == 'yes':
+                            self.speak_dialog('Ok, I get it')
+                            list_contacts[0] = list_contacts[i]
+                            flag=1
+                            break
+                        elif identikit == 'no':
+                            self.speak_dialog('')
+                        else:
+                            self.speak_dialog('')
+                    if flag==0
+                        self.speak_dialog('sorry I did not find your contact')
+                        return
                 if len(list_contacts[0]['activities'])==0:
                     self.speak("You have not any activities with {}".format(surname_name))
                     return
