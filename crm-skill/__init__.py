@@ -60,7 +60,10 @@ class VoiceCRM(MycroftSkill):
         if allowed_actions is not None:
             for action in allowed_actions:
                 if self.voc_match(utt, action, exact=exact_match):
-                    state = state - 1 if action == ACTION_BACK else state
+                    if action == ACTION_BACK:
+                        state = state - 1
+                    elif action == ACTION_SKIP:
+                        state = state + 1
                     return utt, action, state
         return utt, None, state + 1
 
@@ -100,25 +103,25 @@ class VoiceCRM(MycroftSkill):
                 state += 1
 
             if state == 4:
-                gender, action, state = self.wrap_get_response("What is the gender?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT})
+                gender, action, state = self.wrap_get_response("What is the gender?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_SKIP})
                 if action is None:
                     contact["gender"] = gender
                     self.speak(f"{gender}, done")
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return
-                elif action == ACTION_REPEAT:
+                else:
                     continue
 
             if state == 5:
-                birth_date, action, state = self.wrap_get_response("Birth date?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
+                birth_date, action, state = self.wrap_get_response("Birth date?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP})
                 if action is None:
                     contact["birth-date"] = parse.extract_datetime(birth_date)
                     self.speak(f"{birth_date}, done")
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return
-                elif action == ACTION_REPEAT or action == ACTION_BACK:
+                else:
                     continue
 
             if state == 6:
