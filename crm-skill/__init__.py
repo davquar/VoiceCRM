@@ -117,6 +117,11 @@ class VoiceCRM(MycroftSkill):
                 birth_date, action, state = self.wrap_get_response("Birth date?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP})
                 if action is None:
                     contact["birth-date"] = parse.extract_datetime(birth_date)
+                    if contact["birth-date"] is None:
+                        # no datetime found in the utterance --> repeat
+                        self.speak("Hmm, that's not a date")
+                        state -= 1
+                        continue
                     self.speak(f"{birth_date}, done")
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
