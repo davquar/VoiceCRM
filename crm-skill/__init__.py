@@ -57,21 +57,26 @@ def find_contacts_wnick(s):
 def name_surname(s):
     ''' return all possible combination of name-surname'''
     perms = list(permutations(s.split(' ')))
+    if len(perms)<2: # user says only the name or the surname
+        return []
     res = []
     for el in perms:
         for i in range(len(el)-1):
             res.append([' '.join(el[:i+1]),' '.join(el[i+1:])])
     return res
 
-'''da fare'''
 def name_surname_nick(s):
     ''' return all possible combination of name-surname-nick'''
     perms = list(permutations(s.split(' ')))
+    if len(perms)<3: # user says only two words or less
+        return []
     res = []
     for el in perms:
-        for i in range(len(el)-1):
-            res.append([' '.join(el[:i+1]),' '.join(el[i+1:])])
+        for i in range(len(el)-2):
+            for j in range(i+1,len(el)-1):
+                res.append([' '.join(el[:i+1]),' '.join(el[i+1:j+1]),' '.join(el[j+1:])])
     return res
+    
 
 def add_reminder(contact,act,date):
     contact['reminders'].append({'activity':act,'date':date})
@@ -159,11 +164,11 @@ class VoiceCRM(MycroftSkill):
                     continue
                     
                     
-             '''da rivedere se nickname è opzionale o no. Se si, chiede se ha un nickname, se non lo ha il campo rimane vuoto'''
-             '''vedere anche se il nickname è gia usato da altro contatto'''
-              '''nickname = self.get_response("What is the nickname?", num_retries=1)
-              contact["nickname"] = nickname
-              self.speak(f"{nickname}, done")'''
+             #da rivedere se nickname è opzionale o no. Se si, chiede se ha un nickname, se non lo ha il campo rimane vuoto
+             #vedere anche se il nickname è gia usato da altro contatto
+             #nickname = self.get_response("What is the nickname?", num_retries=1)
+             # contact["nickname"] = nickname
+             # self.speak(f"{nickname}, done")
 
             if state == 6:
                 self.speak_dialog("finishing")
@@ -198,7 +203,7 @@ class VoiceCRM(MycroftSkill):
                         if (list_contacts[i]['nickname'] is None):
                             identikit='no'
                         else:
-                            identikit = self.ask_yesno(f'Did you mean {surname_name}, {list_contacts[i]['nickname']}?')
+                            identikit = self.ask_yesno(f"Did you mean {surname_name}, {list_contacts[i]['nickname']}?")
                         if identikit == 'yes':
                             self.speak_dialog('Ok, I get it')
                             list_contacts[0] = list_contacts[i]
@@ -208,7 +213,7 @@ class VoiceCRM(MycroftSkill):
                             self.speak_dialog('')
                         else:
                             self.speak_dialog('')
-                    if flag==0
+                    if flag==0:
                         self.speak_dialog('sorry I did not find your contact')
                         return
 
@@ -270,7 +275,7 @@ class VoiceCRM(MycroftSkill):
                         if (list_contacts[i]['nickname'] is None):
                             identikit='no'
                         else:
-                            identikit = self.ask_yesno(f'Did you mean {person}, {list_contacts[i]['nickname']}?')
+                            identikit = self.ask_yesno(f"Did you mean {person}, {list_contacts[i]['nickname']}?")
                         if identikit == 'yes':
                             self.speak_dialog('Ok, I get it')
                             contact = list_contacts[i]
@@ -280,7 +285,7 @@ class VoiceCRM(MycroftSkill):
                             self.speak_dialog('')
                         else:
                             self.speak_dialog('')
-                    if flag==0
+                    if flag==0:
                         self.speak_dialog('sorry I did not find your contact')
                         return
                 else:
@@ -342,17 +347,17 @@ class VoiceCRM(MycroftSkill):
                         if (list_contacts[i]['nickname'] is None):
                             identikit='no'
                         else:
-                            identikit = self.ask_yesno(f'Did you mean {surname_name}, {list_contacts[i]['nickname']}?')
+                            identikit = self.ask_yesno(f"Did you mean {surname_name}, {list_contacts[i]['nickname']}?")
                         if identikit == 'yes':
                             self.speak_dialog('Ok, I get it')
                             list_contacts[0] = list_contacts[i]
                             flag=1
                             break
                         elif identikit == 'no':
-                            self.speak_dialog('')
+                            continue
                         else:
-                            self.speak_dialog('')
-                    if flag==0
+                            continue
+                    if flag==0:
                         self.speak_dialog('sorry I did not find your contact')
                         return
                 if len(list_contacts[0]['activities'])==0:
@@ -360,23 +365,24 @@ class VoiceCRM(MycroftSkill):
                     return
                 numberOfActivities=len(list_contacts[0]['activities'])-1 # the position in the list of the activity I have to read now
                 nextStep='repeat' # variable to know if the user want to continue, repeat the latest 5 activities or continue in the past
-                cont=0 # number of activities read in this step (from 0 to 5)
+                contStep=0 # how many step I have done
+                responseList = ['repeat', 'continue', 'exit']
                 while nextStep!='exit':
+                    contStep+=1
                     for i in range(5):
                         if numberOfActivities<0:
                             self.speak("you have no other activities with this contact")
                             break  
                         else:
-                            cont+=1 
                             self.speak(f"activity {contacts[0]['activities'][numberOfActivities]['activity']} on date {contacts[0]['activities'][numberOfActivities]['date']}")
                             numberOfActivities-=1
                     # now I ask the user if he want to repeat these activities or exit or continue reading
                     nextStep=None
-                    while nextStep not in ['repeat', 'continue', 'exit']:
-                        nextStep = self.get_response("What will I have to do? Repeat, continue or exit?")
-                        if nextStep=='repeat':
-                            numberOfActivities=len(list_contacts[0]['activities'])-1
-                            cont=0
+                    while nextStep not in responseList:
+                        nextStep = self.ask_selection(responseList,"What will I have to do? Repeat, continue or exit?")
+                    if nextStep=='repeat':
+                        numberOfActivities=len(list_contacts[0]['activities'])-1-((contStep-1)*5)
+                        contStep-=1
                 
                 self.speak("Great! I have done!")
                 done = True
