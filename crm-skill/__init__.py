@@ -25,14 +25,6 @@ contacts = [
     }
 ]
 
-def get_contact(name, surname):
-    ''' return all contacts with name and surname '''
-    return list(filter(lambda contact: contact["name"] == name and contact["surname"] == surname, contacts))
-
-def get_contact_wnick(name, surname, nickname):
-    ''' return all contacts with name, surname and nickname '''
-    return list(filter(lambda contact: contact["name"] == name and contact["surname"] == surname and contact["nickname"] == nickname, contacts))
-
 def add_contact(name, surname):
     ''' create new contact with name and surname '''
     contacts.append({
@@ -48,44 +40,63 @@ def get_contact_by_nickname(s, nickname):
             return item
     return None
 
-def find_contacts(s):
-    ''' return all contact with name/surname or surname-name s (name and surname are divided by space) '''
+def get_contact(name, surname, nickname):
+    ''' return all contacts with name and surname and nickname (if details is empty is accepted) '''
+    return list(filter(lambda contact: (contact["name"] == name or name=='') and (contact["surname"] == surname or surname=='') and (contact["nickname"] == nickname or nickname==''), contacts))
+
+def all_name_surname_nick(s):
+    lis=s.split(' ')
+    if len(lis)==1:
+        return [['','',lis[0]],['',lis[0],''],[lis[0],'','']]
+    else:
+        n=len(lis)//2
+        a1=all_name_surname_nick(' '.join(lis[:n]))
+        a2=all_name_surname_nick(' '.join(lis[n:]))
+        res=[]
+        for e1 in a1:
+            for e2 in a2:
+                app=[]
+                flag = -1
+                if e2[0]!='' and e1[0]!='':
+                    app.append(e1[0]+' '+e2[0])
+                    flag=0
+                elif e1[0]!='':
+                    app.append(e1[0])
+                else:
+                    app.append(e2[0])
+                if e2[1]!='' and e1[1]!='':
+                    app.append(e1[1]+' '+e2[1])
+                    flag=1
+                elif e1[1]!='':
+                    app.append(e1[1])
+                else:
+                    app.append(e2[1])
+                if e2[2]!='' and e1[2]!='':
+                    app.append(e1[2]+' '+e2[2])
+                    flag=2
+                elif e1[2]!='':
+                    app.append(e1[2])
+                else:
+                    app.append(e2[2])
+                if flag>-1:
+                    splittedE2 = e2[flag].split(' ')
+                    for i in range(len(splittedE2)):
+                        if ' '.join(splittedE2[i+1:])=='':
+                            word=' '.join(splittedE2[:i+1])+' '+e1[flag]+' '.join(splittedE2[i+1:])
+                        else:
+                            word=' '.join(splittedE2[:i+1])+' '+e1[flag]+' '+' '.join(splittedE2[i+1:])
+                        app2=app.copy()
+                        app2[flag]=word
+                        res.append(app2)
+                res.append(app)
+        return res
+
+def get_all_contacts(s):
     list_contacts = []
-    list_name_surname = name_surname(s)
-    for l in list_name_surname :  
-        list_contacts += get_contact(l[0], l[1])
+    lis=all_name_surname_nick(s)
+    for l in lis :  
+        list_contacts += get_contact(l[0], l[1], l[2])
     return list_contacts
-
-def find_contacts_wnick(s):
-    list_contacts = []
-    list_name_surname = name_surname_nick(s)
-    for l in list_name_surname :  
-        list_contacts += get_contact_wnick(l[0], l[1], l[2])
-    return list_contacts
-
-def name_surname(s):
-    ''' return all possible combination of name-surname'''
-    perms = list(permutations(s.split(' ')))
-    if len(perms)<2: # user says only the name or the surname
-        return []
-    res = []
-    for el in perms:
-        for i in range(len(el)-1):
-            res.append([' '.join(el[:i+1]),' '.join(el[i+1:])])
-    return res
-
-def name_surname_nick(s):
-    ''' return all possible combination of name-surname-nick'''
-    perms = list(permutations(s.split(' ')))
-    if len(perms)<3: # user says only two words or less
-        return []
-    res = []
-    for el in perms:
-        for i in range(len(el)-2):
-            for j in range(i+1,len(el)-1):
-                res.append([' '.join(el[:i+1]),' '.join(el[i+1:j+1]),' '.join(el[j+1:])])
-    return res
-    
 
 def add_reminder(contact,act,date):
     contact['reminders'].append({'activity':act,'date':date})
@@ -205,13 +216,13 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_REPEAT:
                     continue
 
-                list_contacts = find_contacts(surname_name) # we get all possible contact
+                list_contacts = get_all_contacts(surname_name) # we get all possible contact
                 if len(list_contacts)<=0:
                     # the contact does not exist. We create it, calling task 1, and then we continue adding the reminder
                     should_proceed = self.ask_yesno(f"The contact you call not exist. So, do you want to add it?")
                     if should_proceed == 'yes':
                         self.handle_new_contact(message)
-                        list_contacts = find_contacts(surname_name) # we get the contact
+                        list_contacts = get_all_contacts(surname_name) # we get the contact
                     else: return
                 elif len(list_contacts)>1:
                     self.speak(f"I have found {len(list_contacts)} contacts that could satisfy your request")
@@ -276,12 +287,12 @@ class VoiceCRM(MycroftSkill):
                         return
                     if action == ACTION_REPEAT:
                         continue
-                list_contacts = find_contacts(person)
+                list_contacts = get_all_contacts(person)
                 if len(list_contacts) == 0:
                     should_proceed = self.ask_yesno(f"Hey, I don't know {person}. Do you want to add them?")
                     if should_proceed == 'yes':
                         self.handle_new_contact(message)
-                        contact = find_contacts(person)
+                        contact = get_all_contacts(person)
                     else:
                         self.speak("Ok, I'm here if you need.")
                         return
@@ -352,7 +363,7 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_REPEAT:
                     continue
 
-                list_contacts = find_contacts(surname_name) # we get all possible contact
+                list_contacts = get_all_contacts(surname_name) # we get all possible contact
                 if len(list_contacts)<=0:
                     # the contact does not exist. We exit
                     self.speak("I don't know {}".format(surname_name))
