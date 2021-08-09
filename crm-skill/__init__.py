@@ -18,6 +18,7 @@ contacts = [
     {
         "name": "joe",
         "surname": "peter",
+        "nickname": "bla bla bla",
         "birth_date": "1996-02-02",
         "activities": [],
         "reminders": []
@@ -38,6 +39,14 @@ def add_contact(name, surname):
         "name": name,
         "surname": surname
     })
+
+def get_contact_by_nickname(s, nickname):
+    '''Returns the (first/only) contact with the given nickname'''
+    for item in contacts:
+        s.log.info(item)
+        if item["nickname"] == nickname:
+            return item
+    return None
 
 def find_contacts(s):
     ''' return all contact with name/surname or surname-name s (name and surname are divided by space) '''
@@ -162,15 +171,23 @@ class VoiceCRM(MycroftSkill):
                     return
                 else:
                     continue
-                    
-                    
-             #da rivedere se nickname è opzionale o no. Se si, chiede se ha un nickname, se non lo ha il campo rimane vuoto
-             #vedere anche se il nickname è gia usato da altro contatto
-             #nickname = self.get_response("What is the nickname?", num_retries=1)
-             # contact["nickname"] = nickname
-             # self.speak(f"{nickname}, done")
 
             if state == 6:
+                nickname, action, state = self.wrap_get_response("Nickname?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP})
+                if action is None:
+                    if get_contact_by_nickname(self, nickname) is not None:
+                        self.speak(f"You already have someone with that nickname. Choose another one.")
+                        state -= 1
+                        continue
+                    contact["nickname"] = nickname
+                    self.speak(f"{nickname}, done")
+                elif action == ACTION_STOP:
+                    self.speak_dialog("finishing")
+                    return
+                else:
+                    continue
+
+            if state == 7:
                 self.speak_dialog("finishing")
                 done = True
 
