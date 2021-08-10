@@ -147,13 +147,13 @@ class VoiceCRM(MycroftSkill):
 
             if state == 1:
                 name, action, state = self.wrap_get_response("okay, the name?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
-                self.log.info(get_contact(name, surname))
+                self.log.info(get_contact(name, surname, ''))
                 if action == ACTION_REPEAT or action == ACTION_BACK:
                     continue
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return
-                if len(get_contact(name, surname)) > 0:
+                if len(get_contact(name, surname, '')) > 0:
                     self.speak(f"You already have {name} {surname}. I'll stop here.")
                     return
 
@@ -166,7 +166,7 @@ class VoiceCRM(MycroftSkill):
                 if should_proceed == "no":
                     self.speak_dialog("finishing")
                     return
-                contact = get_contact(name, surname)[0]
+                contact = get_contact(name, surname, '')[0]
                 state += 1
 
             if state == 4:
