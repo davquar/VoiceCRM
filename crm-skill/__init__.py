@@ -425,7 +425,7 @@ class VoiceCRM(MycroftSkill):
                             responseList = ['repeat', 'exit']
                             break  
                         else:
-                            self.speak(f"activity {contacts[0]['activities'][numberOfActivities]['activity']} on date {contacts[0]['activities'][numberOfActivities]['date']}")
+                            self.speak(f"activity {list_contacts[0]['activities'][numberOfActivities]['activity']} on date {list_contacts[0]['activities'][numberOfActivities]['date']}")
                             numberOfActivities-=1
                             responseList = ['repeat', 'continue', 'exit']
                     # now I ask the user if he want to repeat these activities or exit or continue reading
