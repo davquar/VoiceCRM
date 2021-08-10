@@ -2,7 +2,7 @@ version: '3'
 
 services:
   mycroft:
-    image: mycroftai/docker-mycroft:latest
+    image: mycroft
     environment: 
       - PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native
     volumes:
