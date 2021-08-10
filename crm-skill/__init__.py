@@ -1,5 +1,6 @@
 from mycroft import MycroftSkill, intent_file_handler
 from mycroft.util import parse
+from mycroft_bus_client import MessageBusClient, Message
 from itertools import permutations
 
 from .constants import *
@@ -104,6 +105,8 @@ def add_reminder(contact,act,date):
 class VoiceCRM(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
+        self.client = MessageBusClient()
+        self.client.run_in_thread()
 
     def wrap_get_response(self, question, state, exact_match=False, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}):
         '''
@@ -251,7 +254,6 @@ class VoiceCRM(MycroftSkill):
                     self.speak_dialog("finishing")
                     return
                 if action == ACTION_REPEAT or action == ACTION_BACK:
-                    self.log.info("SAID REPEAT OR BACK!!")
                     continue
                 
             if state == 2:
@@ -263,13 +265,10 @@ class VoiceCRM(MycroftSkill):
                     continue
 
                 date = parse.extract_datetime(utt)
-                if date is None:
-                    # no datetime found in the utterance --> repeat
-                    self.speak("Hmm, that's not a date")
-                    state -= 1
-                    continue
+ 
+                # call the reminder-skill to register the reminder
+                self.bus.emit(Message('recognizer_loop:utterance', {"utterances": [f"remind me to {activity} on {utt}"], "lang": "en-us"}))
                 add_reminder(list_contacts[0], activity, date)
-                self.speak("Great! I have added your reminder for {}".format(surname_name))
                 done = True
 
     @intent_file_handler("new-activity.intent")
