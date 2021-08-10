@@ -2,6 +2,7 @@ from mycroft import MycroftSkill, intent_file_handler
 from mycroft.util import parse
 from mycroft_bus_client import MessageBusClient, Message
 from itertools import permutations
+from datetime import datetime, timezone
 
 from .constants import *
 
@@ -11,9 +12,11 @@ contacts = [
         "surname": "peter",
         "nickname": "baubau",
         "birth_date": "1996-01-01",
-        "activities": [ {"activity": "bar", "date": "2021-05-04"},
-                        {"activity": "cinema", "date": "2021-03-01"}, 
-                        {"activity": "nada","date": "2021-04-04"} ],
+        "activities": [ 
+            {"activity": "bar", "date": datetime(2021, 4, 5, tzinfo=timezone.utc)},
+            {"activity": "nada","date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
+            {"activity": "cinema", "date": datetime(2021, 3, 26, tzinfo=timezone.utc)}
+        ],
         "reminders": []
     },
     {
@@ -21,7 +24,14 @@ contacts = [
         "surname": "peter",
         "nickname": "bla bla bla",
         "birth_date": "1996-02-02",
-        "activities": [],
+        "activities": [
+            {"activity": "pizza", "date": datetime(2021, 4, 5, tzinfo=timezone.utc)},
+            {"activity": "cannelloni","date": datetime(2021, 4, 2, tzinfo=timezone.utc)},
+            {"activity": "tennis", "date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
+            {"activity": "bungee jumping","date": datetime(2021, 3, 8, tzinfo=timezone.utc)},
+            {"activity": "cinema", "date": datetime(2021, 2, 28, tzinfo=timezone.utc)},
+            {"activity": "new year's eve", "date": datetime(2021, 1, 1, tzinfo=timezone.utc)},
+        ],
         "reminders": []
     }
 ]
@@ -264,7 +274,7 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_REPEAT or action == ACTION_BACK:
                     continue
 
-                date = parse.extract_datetime(utt)
+                date = parse.extract_datetime(utt)[0]
  
                 # call the reminder-skill to register the reminder
                 self.bus.emit(Message('recognizer_loop:utterance', {"utterances": [f"remind me to {activity} on {utt}"], "lang": "en-us"}))
@@ -334,18 +344,31 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_BACK or action == ACTION_REPEAT:
                     continue
 
-                date = parse.extract_datetime(utt)
+                date = parse.extract_datetime(utt)[0]
                 if date is None:
                     # no datetime found in the utterance --> repeat
                     self.speak("Hmm, that's not a date")
                     state -= 1
                     continue
 
-                contact["activities"].append({
-                    "activity": activity,
-                    "date": date
-                })
-            
+                index = 0
+                too_short = True
+                for index, item in enumerate(contact["activities"]):
+                    if item["date"] < date:
+                        too_short = False
+                        break
+
+                if too_short:
+                    contact["activities"].append({
+                        "activity": activity,
+                        "date": date
+                    })
+                else:
+                    contact["activities"].insert(index, { 
+                        "activity": activity,
+                        "date": date
+                    })
+
                 self.speak("Awesome, done!")
                 done = True
 
