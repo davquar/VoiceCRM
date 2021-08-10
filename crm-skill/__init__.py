@@ -387,7 +387,7 @@ class VoiceCRM(MycroftSkill):
                     if flag==0:
                         self.speak_dialog('sorry I did not find your contact')
                         return
-                if len(list_contacts[0]['activities'])==0:
+                if len(list_contacts[0]['activities']) == 0:
                     self.speak("You have not any activities with {}".format(surname_name))
                     return
                 numberOfActivities=len(list_contacts[0]['activities'])-1 # the position in the list of the activity I have to read now
@@ -399,14 +399,16 @@ class VoiceCRM(MycroftSkill):
                     for i in range(5):
                         if numberOfActivities<0:
                             self.speak("you have no other activities with this contact")
+                            responseList = ['repeat', 'exit']
                             break  
                         else:
                             self.speak(f"activity {contacts[0]['activities'][numberOfActivities]['activity']} on date {contacts[0]['activities'][numberOfActivities]['date']}")
                             numberOfActivities-=1
+                            responseList = ['repeat', 'continue', 'exit']
                     # now I ask the user if he want to repeat these activities or exit or continue reading
                     nextStep=None
                     while nextStep not in responseList:
-                        nextStep = self.ask_selection(responseList,"What will I have to do? Repeat, continue or exit?")
+                        nextStep = self.ask_selection(responseList, f"What will I have to do? {responseList}")
                     if nextStep=='repeat':
                         numberOfActivities=len(list_contacts[0]['activities'])-1-((contStep-1)*5)
                         contStep-=1
