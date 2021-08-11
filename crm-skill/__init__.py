@@ -2,7 +2,6 @@ from mycroft import MycroftSkill, intent_file_handler
 from mycroft.util import parse
 from mycroft_bus_client import MessageBusClient, Message
 from lingua_franca.format import nice_date_time, nice_date
-from itertools import permutations
 from datetime import datetime, timezone
 
 from .constants import *
@@ -236,8 +235,7 @@ class VoiceCRM(MycroftSkill):
                     should_proceed = self.ask_yesno(f"The contact you call not exist. So, do you want to add it?")
                     if should_proceed == 'yes':
                         self.handle_new_contact(message)
-                        list_contacts = get_all_contacts(surname_name) # we get the contact
-                    else: return
+                    return
                 elif len(list_contacts)>1:
                     self.speak(f"I have found {len(list_contacts)} contacts that could satisfy your request")
                     flag=0
@@ -302,7 +300,7 @@ class VoiceCRM(MycroftSkill):
                     should_proceed = self.ask_yesno(f"Hey, I don't know {person}. Do you want to add them?")
                     if should_proceed == 'yes':
                         self.handle_new_contact(message)
-                        contact = get_all_contacts(person)
+                        return
                     else:
                         self.speak("Ok, I'm here if you need.")
                         return
