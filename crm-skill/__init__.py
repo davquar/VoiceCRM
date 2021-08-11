@@ -1,6 +1,7 @@
 from mycroft import MycroftSkill, intent_file_handler
 from mycroft.util import parse
 from mycroft_bus_client import MessageBusClient, Message
+from lingua_franca.format import nice_date_time, nice_date
 from itertools import permutations
 from datetime import datetime, timezone
 
@@ -13,7 +14,7 @@ contacts = [
         "nickname": "baubau",
         "birth_date": "1996-01-01",
         "activities": [ 
-            {"activity": "bar", "date": datetime(2021, 4, 5, tzinfo=timezone.utc)},
+            {"activity": "bar", "date": datetime(2021, 4, 5, 21, 0, tzinfo=timezone.utc)},
             {"activity": "nada","date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
             {"activity": "cinema", "date": datetime(2021, 3, 26, tzinfo=timezone.utc)}
         ],
@@ -425,7 +426,12 @@ class VoiceCRM(MycroftSkill):
                             responseList = ['repeat', 'exit']
                             break  
                         else:
-                            self.speak(f"activity {list_contacts[0]['activities'][numberOfActivities]['activity']} on date {list_contacts[0]['activities'][numberOfActivities]['date']}")
+                            activity = list_contacts[0]['activities'][numberOfActivities]['activity']
+                            datetime = list_contacts[0]['activities'][numberOfActivities]['date']
+                            if datetime.hour == 0 and datetime.minute == 0:
+                                self.speak(f"{activity} at {nice_date(datetime)}")
+                            else:
+                                self.speak(f"{activity} at {nice_date_time(datetime)}")
                             numberOfActivities-=1
                             responseList = ['repeat', 'continue', 'exit']
                     # now I ask the user if he want to repeat these activities or exit or continue reading

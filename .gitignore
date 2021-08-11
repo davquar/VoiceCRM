@@ -1,3 +1,6 @@
+### Mycroft modules folder
+mycroft
+
 ### VisualStudioCode ###
 .vscode/*
 !.vscode/settings.json
