@@ -435,7 +435,7 @@ class VoiceCRM(MycroftSkill):
                     # now I ask the user if he want to repeat these activities or exit or continue reading
                     nextStep=None
                     while nextStep not in responseList:
-                        nextStep = self.ask_selection(responseList, f"What will I have to do? {responseList}")
+                        nextStep = self.ask_selection(responseList, f"What do you want to do?")
                     if nextStep=='repeat':
                         numberOfActivities=len(list_contacts[0]['activities'])-1-((contStep-1)*5)
                         contStep-=1
