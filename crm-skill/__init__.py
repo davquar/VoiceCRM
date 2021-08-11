@@ -285,7 +285,14 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_REPEAT or action == ACTION_BACK:
                     continue
 
-                date = parse.extract_datetime(utt)[0]
+                parsed_datetime = parse.extract_datetime(utt)
+                if parsed_datetime is None:
+                    # no datetime found in the utterance --> repeat
+                    self.speak("Hmm, that's not a date")
+                    state -= 1
+                    continue
+                else:
+                    date = parsed_datetime[0]
  
                 # call the reminder-skill to register the reminder
                 self.bus.emit(Message('recognizer_loop:utterance', {"utterances": [f"remind me to {activity} on {utt}"], "lang": "en-us"}))
@@ -355,12 +362,14 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_BACK or action == ACTION_REPEAT:
                     continue
 
-                date = parse.extract_datetime(utt)[0]
-                if date is None:
+                parsed_datetime = parse.extract_datetime(utt)
+                if parsed_datetime is None:
                     # no datetime found in the utterance --> repeat
                     self.speak("Hmm, that's not a date")
                     state -= 1
                     continue
+                else:
+                    date = parsed_datetime[0]
 
                 index = 0
                 too_short = True
