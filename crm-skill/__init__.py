@@ -112,6 +112,18 @@ def get_all_contacts(s):
 def add_reminder(contact,act,date):
     contact['reminders'].append({'activity':act,'date':date})
 
+def updateResponseList(contStep, numberOfActivities):
+    ret = []
+
+    if contStep > 1:
+        ret.append('back')
+    ret.append('repeat')
+    if numberOfActivities == 0:
+        ret.append('continue')
+    ret.append('exit')
+
+    return ret
+
 class VoiceCRM(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
@@ -421,7 +433,6 @@ class VoiceCRM(MycroftSkill):
                     for i in range(5):
                         if numberOfActivities<0:
                             self.speak("you have no other activities with this contact")
-                            responseList = ['repeat', 'exit']
                             break  
                         else:
                             activity = list_contacts[0]['activities'][numberOfActivities]['activity']
@@ -431,14 +442,17 @@ class VoiceCRM(MycroftSkill):
                             else:
                                 self.speak(f"{activity} at {nice_date_time(datetime)}")
                             numberOfActivities-=1
-                            responseList = ['repeat', 'continue', 'exit']
                     # now I ask the user if he want to repeat these activities or exit or continue reading
                     nextStep=None
+                    responseList = updateResponseList(contStep, numberOfActivities)
                     while nextStep not in responseList:
                         nextStep = self.ask_selection(responseList, f"What do you want to do?")
                     if nextStep=='repeat':
                         numberOfActivities=len(list_contacts[0]['activities'])-1-((contStep-1)*5)
                         contStep-=1
+                    elif nextStep=='back':
+                        numberOfActivities=len(list_contacts[0]['activities'])-1-((contStep-2)*5)
+                        contStep-=2
                 
                 self.speak("Great! I have done!")
                 done = True
