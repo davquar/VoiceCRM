@@ -36,26 +36,28 @@ contacts = [
     }
 ]
 
-def add_contact(name, surname):
-    ''' create new contact with name and surname '''
+def add_contact(name: str, surname: str, nickname=''):
+    """Create new contact with the given name and surname """
     contacts.append({
         "name": name,
-        "surname": surname
+        "surname": surname,
+        "nickname": nickname,
     })
 
-def get_contact_by_nickname(s, nickname):
-    '''Returns the (first/only) contact with the given nickname'''
+def get_contact_by_nickname(nickname: str) -> dict:
+    """Returns the (first/only) contact with the given nickname"""
     for item in contacts:
-        s.log.info(item)
         if item["nickname"] == nickname:
             return item
     return None
 
-def get_contact(name, surname, nickname):
-    ''' return all contacts with name and surname and nickname (if details is empty is accepted) '''
+def get_contact(name: str, surname: str, nickname: str) -> list:
+    """Returns all the contacts with the given name, surname and nickname
+    An empty argument means that it should not be considered in the search"""
     return list(filter(lambda contact: (contact["name"] == name or name=='') and (contact["surname"] == surname or surname=='') and (contact["nickname"] == nickname or nickname==''), contacts))
 
-def all_name_surname_nick(s):
+def all_name_surname_nick(s: str) -> list:
+    """Returns (raw) all the contacts which name or surname or nickname (or a combination of them) matches the given string"""
     lis=s.split(' ')
     if len(lis)==1:
         return [['','',lis[0]],['',lis[0],''],[lis[0],'','']]
@@ -102,17 +104,20 @@ def all_name_surname_nick(s):
                 res.append(app)
         return res
 
-def get_all_contacts(s):
+def get_all_contacts(s: str) -> list:
+    """Wraps all_name_surname_nick"""
     list_contacts = []
     lis=all_name_surname_nick(s)
     for l in lis :  
         list_contacts += get_contact(l[0], l[1], l[2])
     return list_contacts
 
-def add_reminder(contact,act,date):
+def add_reminder(contact: dict, act: str, date: datetime):
+    """Adds the given activity and date to the given contact"""
     contact['reminders'].append({'activity':act,'date':date})
 
-def updateResponseList(contStep, numberOfActivities):
+def updateResponseList(contStep: int, numberOfActivities: int) -> list:
+    """Returns the appropriate listing options, basing on the given parameters"""
     ret = []
 
     if contStep > 1:
@@ -130,11 +135,9 @@ class VoiceCRM(MycroftSkill):
         self.client = MessageBusClient()
         self.client.run_in_thread()
 
-    def wrap_get_response(self, question, state, exact_match=False, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}):
-        '''
-        Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
-        Returns (utterance; user-specified action; next state, based on the action)
-        '''
+    def wrap_get_response(self, question: str, state: int, exact_match=False, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}):
+        """Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
+        Returns (utterance; user-specified action; next state, based on the action)"""
         utt = self.get_response(question)
         if allowed_actions is not None:
             for action in allowed_actions:
@@ -159,7 +162,6 @@ class VoiceCRM(MycroftSkill):
 
             if state == 1:
                 name, action, state = self.wrap_get_response("okay, the name?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
-                self.log.info(get_contact(name, surname, ''))
                 if action == ACTION_REPEAT or action == ACTION_BACK:
                     continue
                 elif action == ACTION_STOP:
@@ -211,7 +213,7 @@ class VoiceCRM(MycroftSkill):
             if state == 6:
                 nickname, action, state = self.wrap_get_response("Nickname?", state, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP})
                 if action is None:
-                    if get_contact_by_nickname(self, nickname) is not None:
+                    if get_contact_by_nickname(nickname) is not None:
                         self.speak(f"You already have someone with that nickname. Choose another one.")
                         state -= 1
                         continue
@@ -232,7 +234,6 @@ class VoiceCRM(MycroftSkill):
         done = False
         state = 0
         while not done:
-            self.log.info("STATE: {}".format(state))
             if state == 0:
                 surname_name, action, state = self.wrap_get_response("About whom?", state, allowed_actions={ACTION_REPEAT, ACTION_STOP})
                 if action == ACTION_STOP:
@@ -241,9 +242,9 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_REPEAT:
                     continue
 
-                list_contacts = get_all_contacts(surname_name) # we get all possible contact
+                list_contacts = get_all_contacts(surname_name)
                 if len(list_contacts)<=0:
-                    # the contact does not exist. We create it, calling task 1, and then we continue adding the reminder
+                    # the contact does not exist --> ask to create
                     should_proceed = self.ask_yesno(f"The contact you call not exist. So, do you want to add it?")
                     if should_proceed == 'yes':
                         self.handle_new_contact(message)
@@ -294,7 +295,7 @@ class VoiceCRM(MycroftSkill):
                 else:
                     date = parsed_datetime[0]
  
-                # call the reminder-skill to register the reminder
+                # call the reminder-skill to activate the reminder in mycroft
                 self.bus.emit(Message('recognizer_loop:utterance', {"utterances": [f"remind me to {activity} on {utt}"], "lang": "en-us"}))
                 add_reminder(list_contacts[0], activity, date)
                 done = True
@@ -405,9 +406,9 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_REPEAT:
                     continue
 
-                list_contacts = get_all_contacts(surname_name) # we get all possible contact
+                list_contacts = get_all_contacts(surname_name)
                 if len(list_contacts)<=0:
-                    # the contact does not exist. We exit
+                    # the contact does not exist --> exit
                     self.speak("I don't know {}".format(surname_name))
                     return
                 elif len(list_contacts)>1:
@@ -433,9 +434,9 @@ class VoiceCRM(MycroftSkill):
                 if len(list_contacts[0]['activities']) == 0:
                     self.speak("You have not any activities with {}".format(surname_name))
                     return
-                numberOfActivities=len(list_contacts[0]['activities'])-1 # the position in the list of the activity I have to read now
-                nextStep='repeat' # variable to know if the user want to continue, repeat the latest 5 activities or continue in the past
-                contStep=0 # how many step I have done
+                numberOfActivities=len(list_contacts[0]['activities'])-1 # the position in the list of the activity to read
+                nextStep='repeat'                                        # continue, repeat, back, exit
+                contStep=0                                               # already done steps
                 responseList = ['repeat', 'continue', 'exit']
                 while nextStep!='exit':
                     contStep+=1
@@ -451,7 +452,8 @@ class VoiceCRM(MycroftSkill):
                             else:
                                 self.speak(f"{activity} at {nice_date_time(datetime)}")
                             numberOfActivities-=1
-                    # now I ask the user if he want to repeat these activities or exit or continue reading
+                    
+                    # ask and handle the next step
                     nextStep=None
                     responseList = updateResponseList(contStep, numberOfActivities)
                     while nextStep not in responseList:
