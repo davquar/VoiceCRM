@@ -2,10 +2,10 @@ from datetime import datetime, timezone
 
 contacts = [
     {
-        "name": "jo",
-        "surname": "peter",
-        "nickname": "baubau",
-        "birth_date": "1996-01-01",
+        "name": "michael",
+        "surname": "jordan",
+        "nickname": "",
+        "birth_date": "",
         "activities": [
             {"activity": "bar", "date": datetime(2021, 4, 5, 21, 0, tzinfo=timezone.utc)},
             {"activity": "nada","date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
@@ -14,10 +14,10 @@ contacts = [
         "reminders": []
     },
     {
-        "name": "joe",
-        "surname": "peter",
-        "nickname": "bla bla bla",
-        "birth_date": "1996-02-02",
+        "name": "elon",
+        "surname": "musk",
+        "nickname": "rocket guy",
+        "birth_date": "",
         "activities": [
             {"activity": "pizza", "date": datetime(2021, 4, 5, tzinfo=timezone.utc)},
             {"activity": "cannelloni","date": datetime(2021, 4, 2, tzinfo=timezone.utc)},
