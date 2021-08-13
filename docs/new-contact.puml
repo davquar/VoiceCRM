@@ -1,0 +1,58 @@
+@startuml new contact
+skinparam SequenceMessageAlignment center
+autonumber
+
+title New contact
+
+actor User as u
+participant Mycroft as m
+
+u -> m: "new contact"
+== State 0 ==
+m --> u: surname?
+u -> m: utt
+m -> m: action hotword handling\n(stop, repeat)
+
+== State 1 ==
+m --> u: name?
+u -> m: utt
+m -> m: action hotword handling\n(stop, repeat)
+
+m -> m: db check
+alt contact exists
+    m --x u: bye
+end
+m -> m: save contact
+
+== State 2 ==
+m --> u: more details?
+u -> m: utt (y/n)
+alt negation
+    m -x u: end
+end
+
+== State 3 ==
+m --> u: gender?
+u -> m: utt
+m -> m: action hotword handling\n(stop, repeat, back, skip)
+m -> m: save
+
+== State 4 ==
+m --> u: birth date?
+u -> m: utt
+m -> m: action hotword handling\n(stop, repeat, back, skip)
+m -> m: save
+
+== State 5 ==
+m --> u: nickname?
+u -> m: utt
+m -> m: action hotword handling\n(stop, repeat, back, skip)
+alt nickname not unique
+    m --> u: inform
+    m -> m: restart current state
+end
+m -> m: save
+
+m --> u: bye
+
+@enduml

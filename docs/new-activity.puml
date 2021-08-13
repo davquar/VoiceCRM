@@ -1,0 +1,52 @@
+@startuml new activity
+skinparam SequenceMessageAlignment center
+autonumber
+
+title New activity
+
+actor User as u
+participant Mycroft as m
+
+u -> m: "new activity"
+
+== State 0 ==
+m --> u: with whom?
+u -> m: utt
+m -> m: action hotword handling\n(stop, repeat)
+
+m -> m: check db
+
+alt contact not found
+    m --> u: add them?
+    u -> m: utt (y/n)
+    alt affirmation
+        m -> m: call new contact task
+    end
+    m -x m
+else multiple contacts
+    loop for each contact
+        m --> u: do you mean $nickname?
+        u -> m: utt (y/n)
+        alt affirmation
+            m --> u: inform
+            m -> m: next state
+        end
+    end
+end
+m --x u: bye
+
+== State 1 ==
+m --> u: activity?
+u -> m: utt
+m -> m: action hotword handling\n(stop, back, repeat)
+
+== State 2 ==
+m --> u: when?
+u -> m: utt
+m -> m: action hotword handling\n(stop, back, repeat)
+
+m -> m: set reminder with given data
+
+m --> u: bye
+
+@enduml
