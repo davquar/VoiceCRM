@@ -1,0 +1,65 @@
+@startuml list activities
+skinparam SequenceMessageAlignment center
+autonumber
+
+title List activities
+
+actor User as u
+participant Mycroft as m
+
+u -> m: "list activities"
+
+== State 0 ==
+m --> u: about whom?
+u -> m: utt
+m -> m: action hotword handling\n(stop, repeat)
+
+m -> m: check db
+
+alt contact not found
+    m --> u: add them?
+    u -> m: utt (y/n)
+    alt affirmation
+        m -> m: call new contact task
+    end
+    m -x m
+else multiple contacts
+    loop for each contact
+        m --> u: do you mean $nickname?
+        u -> m: utt (y/n)
+        alt affirmation
+            m --> u: inform
+            m -> m: next state
+        end
+    end
+m --x u: bye
+end
+
+loop listen user action
+    m -> m: check db
+    alt no activities
+        m --x u: bye
+    end 
+    
+    m --> u: read last 5 activities
+    alt more old activities to read
+        m -> u: repeat or continue?
+    else more recent and old activities to read
+        m -> u: back, repeat or continue?
+    else more recent activities to read
+        m -> u: back or repeat?
+    end
+    
+    u --> m: utt (choice)
+    alt choice == back
+        m -> m: move the index to the 5 newer activities
+    else choice == continue
+        m -> m: move the index to the 5 older activities
+    else choice == exit
+        m -> m: exit the loop
+    end
+end
+
+m --> u: bye
+
+@enduml
