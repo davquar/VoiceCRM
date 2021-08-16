@@ -357,7 +357,7 @@ class VoiceCRM(MycroftSkill):
                     next_step = None
                     response_list = make_response_list(cont_step, number_of_activities)
                     while next_step not in response_list:
-                        next_step = self.ask_selection(response_list, "What do you want to do?")
+                        next_step = self.ask_selection(response_list)
                     if next_step == "repeat":
                         number_of_activities = len(list_contacts[0]["activities"]) - 1 - ((cont_step - 1) * 5)
                         cont_step -= 1
