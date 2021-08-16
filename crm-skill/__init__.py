@@ -378,7 +378,7 @@ def make_response_list(cont_step: int, number_of_activities: int) -> list:
     if cont_step > 1:
         ret.append("back")
     ret.append("repeat")
-    if number_of_activities == 0:
+    if number_of_activities >= 0:
         ret.append("continue")
     ret.append("exit")
 
