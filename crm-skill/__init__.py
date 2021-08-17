@@ -30,7 +30,7 @@ class VoiceCRM(MycroftSkill):
         return utt, None, state + 1
 
     @intent_file_handler("new-contact.intent")
-    def handle_new_contact(self):
+    def handle_new_contact(self) -> dict:
         done = False
         state = 0
         while not done:
@@ -61,10 +61,10 @@ class VoiceCRM(MycroftSkill):
 
             if state == 3:
                 should_proceed = self.ask_yesno("contact-added-ask-details", {"name": name, "surname": surname})
+                contact = get_contact(name, surname, "")[0]
                 if should_proceed == "no":
                     self.speak_dialog("finishing")
-                    return
-                contact = get_contact(name, surname, "")[0]
+                    return contact
                 state += 1
 
             if state == 4:
@@ -76,7 +76,7 @@ class VoiceCRM(MycroftSkill):
                     self.speak_dialog("generic-data-done-repeat", {"data": gender})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
-                    return
+                    return contact
                 else:
                     continue
 
@@ -94,7 +94,7 @@ class VoiceCRM(MycroftSkill):
                     self.speak_dialog("generic-data-done-repeat", {"data": birth_date})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
-                    return
+                    return contact
                 else:
                     continue
 
@@ -111,13 +111,14 @@ class VoiceCRM(MycroftSkill):
                     self.speak_dialog("generic-data-done-repeat", {"data": nickname})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
-                    return
+                    return contact
                 else:
                     continue
 
             if state == 7:
                 self.speak_dialog("finishing")
                 done = True
+                return contact
 
     @intent_file_handler("add-reminder.intent")
     def handle_new_reminder(self):
@@ -138,9 +139,12 @@ class VoiceCRM(MycroftSkill):
                 if len(list_contacts)<=0:
                     # the contact does not exist --> ask to create
                     should_proceed = self.ask_yesno("ask-create-contact")
-                    if should_proceed == "yes":
-                        self.handle_new_contact()
-                    return
+                    if should_proceed == "no":
+                        self.speak_dialog("finishing")
+                        return
+                    list_contacts = [self.handle_new_contact()]
+                    if list_contacts[0] is None:
+                        return
                 elif len(list_contacts)>1:
                     self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": surname_name})
                     flag = 0
@@ -216,11 +220,12 @@ class VoiceCRM(MycroftSkill):
                 list_contacts = get_all_contacts(person)
                 if len(list_contacts) == 0:
                     should_proceed = self.ask_yesno("ask-create-contact")
-                    if should_proceed == "yes":
-                        self.handle_new_contact()
+                    if should_proceed == "no":
+                        self.speak_dialog("finishing")
                         return
-                    self.speak_dialog("finishing")
-                    return
+                    list_contacts = [self.handle_new_contact()]
+                    if list_contacts[0] is None:
+                        return
                 if len(list_contacts) > 1:
                     self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": person})
                     flag = 0
