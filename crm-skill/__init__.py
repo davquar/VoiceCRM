@@ -13,10 +13,12 @@ class VoiceCRM(MycroftSkill):
         self.client = MessageBusClient()
         self.client.run_in_thread()
 
-    def wrap_get_response(self, question: str, state: int, exact_match=False, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}):
+    def wrap_get_response(self, question: str, state: int, exact_match=False,
+        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP},
+        dialog_data=None):
         """Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
         Returns (utterance; user-specified action; next state, based on the action)"""
-        utt = self.get_response(question)
+        utt = self.get_response(question) if dialog_data is None else self.get_response(question, dialog_data)
         if allowed_actions is not None:
             for action in allowed_actions:
                 if self.voc_match(utt, action, exact=exact_match):
@@ -33,7 +35,7 @@ class VoiceCRM(MycroftSkill):
         state = 0
         while not done:
             if state == 0:
-                surname, action, state = self.wrap_get_response("what is the surname?", state, allowed_actions={
+                surname, action, state = self.wrap_get_response("ask-surname", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT
                 })
                 if action == ACTION_STOP:
@@ -41,7 +43,7 @@ class VoiceCRM(MycroftSkill):
                     return
 
             if state == 1:
-                name, action, state = self.wrap_get_response("okay, the name?", state, allowed_actions={
+                name, action, state = self.wrap_get_response("ask-name", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_BACK
                 })
                 if action in (ACTION_REPEAT, ACTION_BACK):
@@ -50,7 +52,7 @@ class VoiceCRM(MycroftSkill):
                     self.speak_dialog("finishing")
                     return
                 if len(get_contact(name, surname, "")) > 0:
-                    self.speak(f"You already have {name} {surname}. I'll stop here.")
+                    self.speak_dialog("name-surname-duplicate", {"name": name, "surname": surname})
                     return
 
             if state == 2:
@@ -58,7 +60,7 @@ class VoiceCRM(MycroftSkill):
                 state += 1
 
             if state == 3:
-                should_proceed = self.ask_yesno(f"Okay, I've added {name} {surname}. Do you want to add other details to them?")
+                should_proceed = self.ask_yesno("contact-added-ask-details", {"name": name, "surname": surname})
                 if should_proceed == "no":
                     self.speak_dialog("finishing")
                     return
@@ -66,12 +68,12 @@ class VoiceCRM(MycroftSkill):
                 state += 1
 
             if state == 4:
-                gender, action, state = self.wrap_get_response("What is the gender?", state, allowed_actions={
+                gender, action, state = self.wrap_get_response("ask-gender", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_SKIP
                 })
                 if action is None:
                     contact["gender"] = gender
-                    self.speak(f"{gender}, done")
+                    self.speak_dialog("generic-data-done-repeat", {"data": gender})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return
@@ -79,17 +81,17 @@ class VoiceCRM(MycroftSkill):
                     continue
 
             if state == 5:
-                birth_date, action, state = self.wrap_get_response("Birth date?", state, allowed_actions={
+                birth_date, action, state = self.wrap_get_response("ask-birth-date", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP
-                })
+                }, dialog_data={"name": name})
                 if action is None:
                     contact["birth-date"] = parse.extract_datetime(birth_date)
                     if contact["birth-date"] is None:
                         # no datetime found in the utterance --> repeat
-                        self.speak("Hmm, that's not a date")
+                        self.speak_dialog("error-no-date")
                         state -= 1
                         continue
-                    self.speak(f"{birth_date}, done")
+                    self.speak_dialog("generic-data-done-repeat", {"data": birth_date})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return
@@ -97,16 +99,16 @@ class VoiceCRM(MycroftSkill):
                     continue
 
             if state == 6:
-                nickname, action, state = self.wrap_get_response("Nickname?", state, allowed_actions={
+                nickname, action, state = self.wrap_get_response("ask-nickname", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP
-                })
+                }, dialog_data={"name": name})
                 if action is None:
                     if get_contact_by_nickname(nickname) is not None:
-                        self.speak("You already have someone with that nickname. Choose another one.")
+                        self.speak_dialog("error-duplicate-nickname")
                         state -= 1
                         continue
                     contact["nickname"] = nickname
-                    self.speak(f"{nickname}, done")
+                    self.speak_dialog("generic-data-done-repeat", {"data": nickname})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return
@@ -123,7 +125,7 @@ class VoiceCRM(MycroftSkill):
         state = 0
         while not done:
             if state == 0:
-                surname_name, action, state = self.wrap_get_response("About whom?", state, allowed_actions={
+                surname_name, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
                     ACTION_REPEAT, ACTION_STOP
                 })
                 if action == ACTION_STOP:
@@ -135,20 +137,20 @@ class VoiceCRM(MycroftSkill):
                 list_contacts = get_all_contacts(surname_name)
                 if len(list_contacts)<=0:
                     # the contact does not exist --> ask to create
-                    should_proceed = self.ask_yesno("The contact you call not exist. So, do you want to add it?")
+                    should_proceed = self.ask_yesno("ask-create-contact")
                     if should_proceed == "yes":
                         self.handle_new_contact()
                     return
                 elif len(list_contacts)>1:
-                    self.speak(f"I have found {len(list_contacts)} contacts that could satisfy your request")
+                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": surname_name})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         if list_contacts[i]["nickname"] is None:
                             identikit="no"
                         else:
-                            identikit = self.ask_yesno(f"Did you mean {surname_name}, {list_contacts[i]['nickname']}?")
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": surname_name, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
-                            self.speak_dialog("Ok, I get it")
+                            self.speak_dialog("generic-data-done-repeat")
                             list_contacts[0] = list_contacts[i]
                             flag = 1
                             break
@@ -157,11 +159,11 @@ class VoiceCRM(MycroftSkill):
                         else:
                             self.speak_dialog("")
                     if flag == 0:
-                        self.speak_dialog("sorry I did not find your contact")
+                        self.speak_dialog("error-contact-not-found")
                         return
 
             if state == 1:
-                activity, action, state = self.wrap_get_response("What should I remind you?", state, allowed_actions={
+                activity, action, state = self.wrap_get_response("ask-what-remind", state, allowed_actions={
                     ACTION_STOP, ACTION_BACK, ACTION_REPEAT
                 })
                 if action == ACTION_STOP:
@@ -171,7 +173,7 @@ class VoiceCRM(MycroftSkill):
                     continue
 
             if state == 2:
-                utt, action, state = self.wrap_get_response("When should I remind it to you?", state, allowed_actions={
+                utt, action, state = self.wrap_get_response("ask-when-remind", state, allowed_actions={
                     ACTION_STOP, ACTION_BACK, ACTION_REPEAT
                 })
                 if action == ACTION_STOP:
@@ -183,7 +185,7 @@ class VoiceCRM(MycroftSkill):
                 parsed_datetime = parse.extract_datetime(utt)
                 if parsed_datetime is None:
                     # no datetime found in the utterance --> repeat
-                    self.speak("Hmm, that's not a date")
+                    self.speak_dialog("error-not-date")
                     state -= 1
                     continue
 
@@ -203,7 +205,7 @@ class VoiceCRM(MycroftSkill):
                 if message.data.get("person") is not None:
                     person = message.data.get("person")
                 else:
-                    person, action, state = self.wrap_get_response("whith whom you have done this activity?", state, allowed_actions={
+                    person, action, state = self.wrap_get_response("ask-with-whom", state, allowed_actions={
                         ACTION_STOP, ACTION_REPEAT
                     })
                     if action == ACTION_STOP:
@@ -213,22 +215,22 @@ class VoiceCRM(MycroftSkill):
                         continue
                 list_contacts = get_all_contacts(person)
                 if len(list_contacts) == 0:
-                    should_proceed = self.ask_yesno(f"Hey, I don't know {person}. Do you want to add them?")
+                    should_proceed = self.ask_yesno("ask-create-contact")
                     if should_proceed == "yes":
                         self.handle_new_contact()
                         return
-                    self.speak("Ok, I'm here if you need.")
+                    self.speak_dialog("finishing")
                     return
                 if len(list_contacts) > 1:
-                    self.speak(f"I have found {len(list_contacts)} contacts that could satisfy your request")
+                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": person})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         if list_contacts[i]["nickname"] is None:
                             identikit="no"
                         else:
-                            identikit = self.ask_yesno(f"Did you mean {person}, {list_contacts[i]['nickname']}?")
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": person, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
-                            self.speak_dialog("Ok, I get it")
+                            self.speak_dialog("generic-data-done-repeat")
                             contact = list_contacts[i]
                             flag=1
                             break
@@ -237,13 +239,13 @@ class VoiceCRM(MycroftSkill):
                         else:
                             self.speak_dialog("")
                     if flag == 0:
-                        self.speak_dialog("sorry I did not find your contact")
+                        self.speak_dialog("error-contact-not-found")
                         return
                 else:
                     contact = list_contacts[0]
 
             if state == 1:
-                activity, action, state = self.wrap_get_response("Ok, what have you done with them?", state, allowed_actions={
+                activity, action, state = self.wrap_get_response("ask-activity", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_BACK
                 })
                 if action == ACTION_STOP:
@@ -253,7 +255,7 @@ class VoiceCRM(MycroftSkill):
                     continue
 
             if state == 2:
-                utt, action, state = self.wrap_get_response("Perfect, when did you do it?", state, allowed_actions={
+                utt, action, state = self.wrap_get_response("ask-activity-when", state, allowed_actions={
                     ACTION_STOP, ACTION_BACK, ACTION_REPEAT
                 })
                 if action == ACTION_STOP:
@@ -265,7 +267,7 @@ class VoiceCRM(MycroftSkill):
                 parsed_datetime = parse.extract_datetime(utt)
                 if parsed_datetime is None:
                     # no datetime found in the utterance --> repeat
-                    self.speak("Hmm, that's not a date")
+                    self.speak_dialog("error-not-date")
                     state -= 1
                     continue
 
@@ -289,7 +291,7 @@ class VoiceCRM(MycroftSkill):
                         "date": date
                     })
 
-                self.speak("Awesome, done!")
+                self.speak_dialog("finishing")
                 done = True
 
     @intent_file_handler("last-activities.intent")
@@ -298,7 +300,7 @@ class VoiceCRM(MycroftSkill):
         state = 0
         while not done:
             if state == 0:
-                surname_name, action, state = self.wrap_get_response("About whom?", state, allowed_actions={
+                surname_name, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT
                 })
                 if action == ACTION_STOP:
@@ -309,19 +311,21 @@ class VoiceCRM(MycroftSkill):
 
                 list_contacts = get_all_contacts(surname_name)
                 if len(list_contacts) <= 0:
-                    # the contact does not exist --> exit
-                    self.speak("I don't know {}".format(surname_name))
+                    # the contact does not exist --> ask to create
+                    should_proceed = self.ask_yesno("ask-create-contact")
+                    if should_proceed == "yes":
+                        self.handle_new_contact()
                     return
                 if len(list_contacts) > 1:
-                    self.speak(f"I have found {len(list_contacts)} contacts that could satisfy your request")
+                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": surname_name})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         if list_contacts[i]["nickname"] is None:
                             identikit="no"
                         else:
-                            identikit = self.ask_yesno(f"Did you mean {surname_name}, {list_contacts[i]['nickname']}?")
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": surname_name, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
-                            self.speak_dialog("Ok, I get it")
+                            self.speak_dialog("generic-data-done-repeat")
                             list_contacts[0] = list_contacts[i]
                             flag=1
                             break
@@ -329,10 +333,10 @@ class VoiceCRM(MycroftSkill):
                             continue
                         continue
                     if flag==0:
-                        self.speak_dialog("sorry I did not find your contact")
+                        self.speak_dialog("error-contact-not-found")
                         return
                 if len(list_contacts[0]["activities"]) == 0:
-                    self.speak("You have not any activities with {}".format(surname_name))
+                    self.speak_dialog("no-activities", {"name": list_contacts[0]["name"]})
                     return
                 number_of_activities = len(list_contacts[0]["activities"]) - 1 # the position in the list of the activity to read
                 next_step = "repeat"                                           # continue, repeat, back, exit
@@ -342,15 +346,15 @@ class VoiceCRM(MycroftSkill):
                     cont_step += 1
                     for i in range(5):
                         if number_of_activities < 0:
-                            self.speak("you have no other activities with this contact")
+                            self.speak_dialog("no-other-activities", {"name": list_contacts[0]["name"]})
                             break
 
                         activity = list_contacts[0]["activities"][number_of_activities]["activity"]
                         date = list_contacts[0]["activities"][number_of_activities]["date"]
                         if date.hour == 0 and date.minute == 0:
-                            self.speak(f"{activity} at {nice_date(date)}")
+                            self.speak_dialog("read-activity", {"activity": activity, "when": nice_date(date)})
                         else:
-                            self.speak(f"{activity} at {nice_date_time(date)}")
+                            self.speak_dialog("read-activity", {"activity": activity, "when": nice_date_time(date)})
                         number_of_activities -= 1
 
                     # ask and handle the next step
@@ -365,7 +369,7 @@ class VoiceCRM(MycroftSkill):
                         number_of_activities = len(list_contacts[0]["activities"]) - 1 - ((cont_step - 2) * 5)
                         cont_step -= 2
 
-                self.speak("Great! I have done!")
+                self.speak_dialog("finishing")
                 done = True
 
 def create_skill():
