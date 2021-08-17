@@ -53,13 +53,34 @@ class VoiceCRM(MycroftSkill):
                     return
                 if len(get_contact(name, surname, "")) > 0:
                     self.speak_dialog("name-surname-duplicate", {"name": name, "surname": surname})
+                    if self.ask_yesno("ask-sure-another-person") == "yes":
+                        nickname_mandatory = True
+                        continue
+                    self.speak_dialog("finishing")
                     return
 
             if state == 2:
-                add_contact(name, surname)
-                state += 1
+                allowed_actions = {ACTION_STOP, ACTION_REPEAT, ACTION_BACK}
+                if not nickname_mandatory:
+                    allowed_actions.update({ACTION_SKIP})
+                nickname, action, state = self.wrap_get_response("ask-nickname", state, allowed_actions=allowed_actions, dialog_data={"name": name})
+                if action is None:
+                    if get_contact_by_nickname(nickname) is not None:
+                        self.speak_dialog("error-duplicate-nickname")
+                        state -= 1
+                        continue
+                    self.speak_dialog("generic-data-done-repeat", {"data": nickname})
+                elif action == ACTION_STOP:
+                    self.speak_dialog("finishing")
+                    return
+                else:
+                    continue
 
             if state == 3:
+                add_contact(name, surname, nickname)
+                state += 1
+
+            if state == 4:
                 should_proceed = self.ask_yesno("contact-added-ask-details", {"name": name, "surname": surname})
                 contact = get_contact(name, surname, "")[0]
                 if should_proceed == "no":
@@ -67,7 +88,7 @@ class VoiceCRM(MycroftSkill):
                     return contact
                 state += 1
 
-            if state == 4:
+            if state == 5:
                 gender, action, state = self.wrap_get_response("ask-gender", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_SKIP
                 })
@@ -80,7 +101,7 @@ class VoiceCRM(MycroftSkill):
                 else:
                     continue
 
-            if state == 5:
+            if state == 6:
                 birth_date, action, state = self.wrap_get_response("ask-birth-date", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP
                 }, dialog_data={"name": name})
@@ -92,23 +113,6 @@ class VoiceCRM(MycroftSkill):
                         state -= 1
                         continue
                     self.speak_dialog("generic-data-done-repeat", {"data": birth_date})
-                elif action == ACTION_STOP:
-                    self.speak_dialog("finishing")
-                    return contact
-                else:
-                    continue
-
-            if state == 6:
-                nickname, action, state = self.wrap_get_response("ask-nickname", state, allowed_actions={
-                    ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP
-                }, dialog_data={"name": name})
-                if action is None:
-                    if get_contact_by_nickname(nickname) is not None:
-                        self.speak_dialog("error-duplicate-nickname")
-                        state -= 1
-                        continue
-                    contact["nickname"] = nickname
-                    self.speak_dialog("generic-data-done-repeat", {"data": nickname})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return contact
@@ -330,7 +334,7 @@ class VoiceCRM(MycroftSkill):
                         else:
                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": surname_name, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
-                            self.speak_dialog("generic-data-done-repeat")
+                            self.speak_dialog("generic-data-done-repeat", {"data": ""})
                             list_contacts[0] = list_contacts[i]
                             flag=1
                             break
