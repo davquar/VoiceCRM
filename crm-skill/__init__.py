@@ -338,14 +338,14 @@ class VoiceCRM(MycroftSkill):
                 if len(list_contacts[0]["activities"]) == 0:
                     self.speak_dialog("no-activities", {"name": list_contacts[0]["name"]})
                     return
-                number_of_activities = len(list_contacts[0]["activities"]) - 1 # the position in the list of the activity to read
-                next_step = "repeat"                                           # continue, repeat, back, exit
-                cont_step = 0                                                  # already done steps
+                number_of_activities = 0                                # the position in the list of the activities to read
+                next_step = "repeat"                                    # continue, repeat, back, exit
+                cont_step = 0                                           # already done steps
                 response_list = ["repeat", "continue", "exit"]
                 while next_step != "exit":
                     cont_step += 1
                     for i in range(5):
-                        if number_of_activities < 0:
+                        if number_of_activities >= len(list_contacts[0]["activities"]):
                             self.speak_dialog("no-other-activities", {"name": list_contacts[0]["name"]})
                             break
 
@@ -355,18 +355,18 @@ class VoiceCRM(MycroftSkill):
                             self.speak_dialog("read-activity", {"activity": activity, "when": nice_date(date)})
                         else:
                             self.speak_dialog("read-activity", {"activity": activity, "when": nice_date_time(date)})
-                        number_of_activities -= 1
+                        number_of_activities += 1
 
                     # ask and handle the next step
                     next_step = None
-                    response_list = make_response_list(cont_step, number_of_activities)
+                    response_list = make_response_list(cont_step, number_of_activities, len(list_contacts[0]["activities"]))
                     while next_step not in response_list:
                         next_step = self.ask_selection(response_list)
                     if next_step == "repeat":
-                        number_of_activities = len(list_contacts[0]["activities"]) - 1 - ((cont_step - 1) * 5)
+                        number_of_activities = (cont_step - 1) * 5
                         cont_step -= 1
                     elif next_step == "back":
-                        number_of_activities = len(list_contacts[0]["activities"]) - 1 - ((cont_step - 2) * 5)
+                        number_of_activities = (cont_step - 2) * 5
                         cont_step -= 2
 
                 self.speak_dialog("finishing")
@@ -375,14 +375,14 @@ class VoiceCRM(MycroftSkill):
 def create_skill():
     return VoiceCRM()
 
-def make_response_list(cont_step: int, number_of_activities: int) -> list:
+def make_response_list(cont_step: int, number_of_activities: int, activities_length: int) -> list:
     """Returns the appropriate listing options, basing on the given parameters"""
     ret = []
 
     if cont_step > 1:
         ret.append("back")
     ret.append("repeat")
-    if number_of_activities >= 0:
+    if number_of_activities < activities_length:
         ret.append("continue")
     ret.append("exit")
 
