@@ -42,6 +42,9 @@ class VoiceCRM(MycroftSkill):
                     self.speak_dialog("finishing")
                     return
 
+                if surname is None:
+                    return
+
             if state == 1:
                 name, action, state = self.wrap_get_response("ask-name", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_BACK
@@ -51,6 +54,11 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return
+
+                if name is None:
+                    return
+
+                nickname_mandatory = False
                 if len(get_contact(name, surname, "")) > 0:
                     self.speak_dialog("name-surname-duplicate", {"name": name, "surname": surname})
                     if self.ask_yesno("ask-sure-another-person") == "yes":
@@ -76,6 +84,9 @@ class VoiceCRM(MycroftSkill):
                 else:
                     continue
 
+                if nickname is None:
+                    return
+
             if state == 3:
                 add_contact(name, surname, nickname)
                 state += 1
@@ -83,10 +94,11 @@ class VoiceCRM(MycroftSkill):
             if state == 4:
                 should_proceed = self.ask_yesno("contact-added-ask-details", {"name": name, "surname": surname})
                 contact = get_contact(name, surname, "")[0]
-                if should_proceed == "no":
-                    self.speak_dialog("finishing")
-                    return contact
-                state += 1
+                if should_proceed == "yes":
+                    state += 1
+                    continue
+                self.speak_dialog("finishing")
+                return contact
 
             if state == 5:
                 gender, action, state = self.wrap_get_response("ask-gender", state, allowed_actions={
@@ -100,6 +112,9 @@ class VoiceCRM(MycroftSkill):
                     return contact
                 else:
                     continue
+
+                if gender is None:
+                    return
 
             if state == 6:
                 birth_date, action, state = self.wrap_get_response("ask-birth-date", state, allowed_actions={
@@ -118,6 +133,9 @@ class VoiceCRM(MycroftSkill):
                     return contact
                 else:
                     continue
+
+                if birth_date is None:
+                    return
 
             if state == 7:
                 self.speak_dialog("finishing")
@@ -139,16 +157,21 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_REPEAT:
                     continue
 
+                if surname_name is None:
+                    return
+
                 list_contacts = get_all_contacts(surname_name)
                 if len(list_contacts)<=0:
                     # the contact does not exist --> ask to create
                     should_proceed = self.ask_yesno("ask-create-contact")
-                    if should_proceed == "no":
+                    if should_proceed == "yes":
+                        list_contacts = [self.handle_new_contact()]
+                        if list_contacts[0] is None:
+                            return
+                    else:
                         self.speak_dialog("finishing")
                         return
-                    list_contacts = [self.handle_new_contact()]
-                    if list_contacts[0] is None:
-                        return
+
                 elif len(list_contacts)>1:
                     self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": surname_name})
                     flag = 0
@@ -179,6 +202,9 @@ class VoiceCRM(MycroftSkill):
                     return
                 if action in (ACTION_REPEAT, ACTION_BACK):
                     continue
+                
+                if activity is None:
+                    return
 
             if state == 2:
                 utt, action, state = self.wrap_get_response("ask-when-remind", state, allowed_actions={
@@ -189,6 +215,9 @@ class VoiceCRM(MycroftSkill):
                     return
                 if action in (ACTION_REPEAT, ACTION_BACK):
                     continue
+
+                if action is None:
+                    return
 
                 parsed_datetime = parse.extract_datetime(utt)
                 if parsed_datetime is None:
@@ -221,14 +250,19 @@ class VoiceCRM(MycroftSkill):
                         return
                     if action == ACTION_REPEAT:
                         continue
+
+                    if person is None:
+                        return
+
                 list_contacts = get_all_contacts(person)
                 if len(list_contacts) == 0:
                     should_proceed = self.ask_yesno("ask-create-contact")
-                    if should_proceed == "no":
+                    if should_proceed == "yes":
+                        list_contacts = [self.handle_new_contact()]
+                        if list_contacts[0] is None:
+                            return
+                    else:
                         self.speak_dialog("finishing")
-                        return
-                    list_contacts = [self.handle_new_contact()]
-                    if list_contacts[0] is None:
                         return
                 if len(list_contacts) > 1:
                     self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": person})
@@ -263,6 +297,9 @@ class VoiceCRM(MycroftSkill):
                 if action in (ACTION_BACK, ACTION_REPEAT):
                     continue
 
+                if activity is None:
+                    return
+
             if state == 2:
                 utt, action, state = self.wrap_get_response("ask-activity-when", state, allowed_actions={
                     ACTION_STOP, ACTION_BACK, ACTION_REPEAT
@@ -272,6 +309,9 @@ class VoiceCRM(MycroftSkill):
                     return
                 if action in (ACTION_BACK, ACTION_REPEAT):
                     continue
+
+                if action is None:
+                    return
 
                 parsed_datetime = parse.extract_datetime(utt)
                 if parsed_datetime is None:
@@ -317,6 +357,9 @@ class VoiceCRM(MycroftSkill):
                     return
                 if action == ACTION_REPEAT:
                     continue
+
+                if surname_name is None:
+                    return
 
                 list_contacts = get_all_contacts(surname_name)
                 if len(list_contacts) <= 0:
