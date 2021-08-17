@@ -36,7 +36,8 @@ def add_contact(name: str, surname: str, nickname=""):
         "name": name,
         "surname": surname,
         "nickname": nickname,
-        "activities": []
+        "activities": [],
+        "reminders": []
     })
 
 def get_contact_by_nickname(nickname: str) -> dict:
