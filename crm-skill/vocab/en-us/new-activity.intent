@@ -1,2 +1,2 @@
-(|add|create|register) (|a) new activity (|with {person})
-(add|create|register) (|a) (|new) activity (|with {person})
+(|add|create|register|another) (|a) new activity (|with {person})
+(add|create|register|another) (|a) (|new) activity (|with {person})

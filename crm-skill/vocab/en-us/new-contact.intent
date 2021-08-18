@@ -1,3 +1,3 @@
-(add|create) a new (contact|person)
-(add|create) (|a) (|new) (contact|person)
-(add|create) someone
+(add|create) a new (contact|person) (|to my contacts|to my contact list)
+(add|create) (|a) (|new) (contact|person) (|to my contacts|to my contact list)
+(add|create) someone (|to my contacts|to my contact list)
