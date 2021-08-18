@@ -237,12 +237,24 @@ class VoiceCRM(MycroftSkill):
     def handle_new_activity(self, message):
         done = False
         state = 0
+
+        # get entities if the user used a compact phrase
+        utt_person = message.data.get("person")
+        utt_datetime = message.data.get("datetime")
+        utt_activity = message.data.get("activity")
+
+        # questions can be skipped if all entities exist and are valid
+        skip_questions = False
+
         while not done:
             if state == 0:
-                if message.data.get("person") is not None:
-                    person = message.data.get("person")
+                if utt_person is not None and utt_datetime is not None and utt_activity is not None:
+                    skip_questions = True
+                    state += 1
+                elif utt_person is not None:
+                    state += 1
                 else:
-                    person, action, state = self.wrap_get_response("ask-with-whom", state, allowed_actions={
+                    utt_person, action, state = self.wrap_get_response("ask-with-whom", state, allowed_actions={
                         ACTION_STOP, ACTION_REPEAT
                     })
                     if action == ACTION_STOP:
@@ -251,10 +263,10 @@ class VoiceCRM(MycroftSkill):
                     if action == ACTION_REPEAT:
                         continue
 
-                    if person is None:
+                    if utt_person is None:
                         return
 
-                list_contacts = get_all_contacts(person)
+                list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts) == 0:
                     should_proceed = self.ask_yesno("ask-create-contact")
                     if should_proceed == "yes":
@@ -265,13 +277,13 @@ class VoiceCRM(MycroftSkill):
                         self.speak_dialog("finishing")
                         return
                 if len(list_contacts) > 1:
-                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": person})
+                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": utt_person})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         if list_contacts[i]["nickname"] is None:
                             identikit="no"
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": person, "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
                             self.speak_dialog("generic-data-done-repeat")
                             contact = list_contacts[i]
@@ -288,36 +300,43 @@ class VoiceCRM(MycroftSkill):
                     contact = list_contacts[0]
 
             if state == 1:
-                activity, action, state = self.wrap_get_response("ask-activity", state, allowed_actions={
-                    ACTION_STOP, ACTION_REPEAT, ACTION_BACK
-                })
-                if action == ACTION_STOP:
-                    self.speak_dialog("finishing")
-                    return
-                if action in (ACTION_BACK, ACTION_REPEAT):
-                    continue
+                if not skip_questions:
+                    utt_activity, action, state = self.wrap_get_response("ask-activity", state, allowed_actions={
+                        ACTION_STOP, ACTION_REPEAT, ACTION_BACK
+                    })
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action in (ACTION_BACK, ACTION_REPEAT):
+                        continue
+                else:
+                    state += 1
 
-                if activity is None:
+                if utt_activity is None:
                     return
 
             if state == 2:
-                utt, action, state = self.wrap_get_response("ask-activity-when", state, allowed_actions={
-                    ACTION_STOP, ACTION_BACK, ACTION_REPEAT
-                })
-                if action == ACTION_STOP:
-                    self.speak_dialog("finishing")
-                    return
-                if action in (ACTION_BACK, ACTION_REPEAT):
-                    continue
+                if not skip_questions:
+                    utt_datetime, action, state = self.wrap_get_response("ask-activity-when", state, allowed_actions={
+                        ACTION_STOP, ACTION_BACK, ACTION_REPEAT
+                    })
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action in (ACTION_BACK, ACTION_REPEAT):
+                        continue
 
-                if action is None:
-                    return
+                    if utt_datetime is None:
+                        return
+                else:
+                    state += 1
 
-                parsed_datetime = parse.extract_datetime(utt)
+                parsed_datetime = parse.extract_datetime(utt_datetime)
                 if parsed_datetime is None:
                     # no datetime found in the utterance --> repeat
                     self.speak_dialog("error-not-date")
                     state -= 1
+                    skip_questions = False
                     continue
 
                 date = parsed_datetime[0]
@@ -331,12 +350,12 @@ class VoiceCRM(MycroftSkill):
 
                 if too_short:
                     contact["activities"].append({
-                        "activity": activity,
+                        "activity": utt_activity,
                         "date": date
                     })
                 else:
                     contact["activities"].insert(index, {
-                        "activity": activity,
+                        "activity": utt_activity,
                         "date": date
                     })
 
