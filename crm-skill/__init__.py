@@ -143,24 +143,34 @@ class VoiceCRM(MycroftSkill):
                 return contact
 
     @intent_file_handler("add-reminder.intent")
-    def handle_new_reminder(self):
+    def handle_new_reminder(self, message):
         done = False
         state = 0
+
+        # get entities if the user used a compact phrase
+        utt_person = message.data.get("person")
+        utt_datetime = message.data.get("datetime")
+        
         while not done:
             if state == 0:
-                surname_name, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
-                    ACTION_REPEAT, ACTION_STOP
-                })
-                if action == ACTION_STOP:
-                    self.speak_dialog("finishing")
-                    return
-                if action == ACTION_REPEAT:
-                    continue
+                if utt_person is not None and utt_datetime is not None:
+                    state += 1
+                elif utt_person is not None:
+                    state += 1
+                else:
+                    utt_person, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
+                        ACTION_REPEAT, ACTION_STOP
+                    })
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action == ACTION_REPEAT:
+                        continue
 
-                if surname_name is None:
-                    return
+                    if utt_person is None:
+                        return
 
-                list_contacts = get_all_contacts(surname_name)
+                list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts)<=0:
                     # the contact does not exist --> ask to create
                     should_proceed = self.ask_yesno("ask-create-contact")
@@ -173,13 +183,13 @@ class VoiceCRM(MycroftSkill):
                         return
 
                 elif len(list_contacts)>1:
-                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": surname_name})
+                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": utt_person})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         if list_contacts[i]["nickname"] is None:
                             identikit="no"
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": surname_name, "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
                             self.speak_dialog("generic-data-done-repeat")
                             list_contacts[0] = list_contacts[i]
@@ -194,7 +204,7 @@ class VoiceCRM(MycroftSkill):
                         return
 
             if state == 1:
-                activity, action, state = self.wrap_get_response("ask-what-remind", state, allowed_actions={
+                utt_activity, action, state = self.wrap_get_response("ask-what-remind", state, allowed_actions={
                     ACTION_STOP, ACTION_BACK, ACTION_REPEAT
                 })
                 if action == ACTION_STOP:
@@ -202,24 +212,25 @@ class VoiceCRM(MycroftSkill):
                     return
                 if action in (ACTION_REPEAT, ACTION_BACK):
                     continue
-                
-                if activity is None:
+
+                if utt_activity is None:
                     return
 
             if state == 2:
-                utt, action, state = self.wrap_get_response("ask-when-remind", state, allowed_actions={
-                    ACTION_STOP, ACTION_BACK, ACTION_REPEAT
-                })
-                if action == ACTION_STOP:
-                    self.speak_dialog("finishing")
-                    return
-                if action in (ACTION_REPEAT, ACTION_BACK):
-                    continue
+                if utt_datetime is None:
+                    utt_datetime, action, state = self.wrap_get_response("ask-when-remind", state, allowed_actions={
+                        ACTION_STOP, ACTION_BACK, ACTION_REPEAT
+                    })
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action in (ACTION_REPEAT, ACTION_BACK):
+                        continue
 
-                if action is None:
-                    return
+                    if utt_datetime is None:
+                        return
 
-                parsed_datetime = parse.extract_datetime(utt)
+                parsed_datetime = parse.extract_datetime(utt_datetime)
                 if parsed_datetime is None:
                     # no datetime found in the utterance --> repeat
                     self.speak_dialog("error-not-date")
@@ -229,8 +240,8 @@ class VoiceCRM(MycroftSkill):
                 date = parsed_datetime[0]
 
                 # call the reminder-skill to activate the reminder in mycroft
-                self.bus.emit(Message("recognizer_loop:utterance", {"utterances": [f"remind me to {activity} on {utt}"], "lang": "en-us"}))
-                add_reminder(list_contacts[0], activity, date)
+                self.bus.emit(Message("recognizer_loop:utterance", {"utterances": [f"remind me to {utt_activity} on {utt_datetime}"], "lang": "en-us"}))
+                add_reminder(list_contacts[0], utt_activity, date)
                 done = True
 
     @intent_file_handler("new-activity.intent")
