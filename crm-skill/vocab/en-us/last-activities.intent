@@ -1,1 +1,5 @@
-(|read|read me|tell|tell me|say) (|the) (latest|last) (|the) activities
+(|read|read me|tell|tell me|say) (|the) (latest|last|list) (|the) activities (|with {person})
+(|read|read me|tell|tell me|say|let me know|list) what have I done with {person}
+have I done something with {person}?
+do I have activities with {person}?
+does {person} have activities with me?

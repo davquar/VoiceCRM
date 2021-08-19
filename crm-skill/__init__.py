@@ -363,24 +363,31 @@ class VoiceCRM(MycroftSkill):
                 done = True
 
     @intent_file_handler("last-activities.intent")
-    def handle_last_activities(self):
+    def handle_last_activities(self, message):
         done = False
         state = 0
+
+        # get entities if the user used a compact phrase
+        utt_person = message.data.get("person")
+
         while not done:
             if state == 0:
-                surname_name, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
-                    ACTION_STOP, ACTION_REPEAT
-                })
-                if action == ACTION_STOP:
-                    self.speak_dialog("finishing")
-                    return
-                if action == ACTION_REPEAT:
-                    continue
+                if utt_person is not None:
+                    state += 1
+                else:
+                    utt_person, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
+                        ACTION_STOP, ACTION_REPEAT
+                    })
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action == ACTION_REPEAT:
+                        continue
 
-                if surname_name is None:
-                    return
+                    if utt_person is None:
+                        return
 
-                list_contacts = get_all_contacts(surname_name)
+                list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts) <= 0:
                     # the contact does not exist --> ask to create
                     should_proceed = self.ask_yesno("ask-create-contact")
@@ -388,13 +395,13 @@ class VoiceCRM(MycroftSkill):
                         self.handle_new_contact()
                     return
                 if len(list_contacts) > 1:
-                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": surname_name})
+                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": utt_person})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         if list_contacts[i]["nickname"] is None:
                             identikit="no"
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": surname_name, "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
                             self.speak_dialog("generic-data-done-repeat", {"data": ""})
                             list_contacts[0] = list_contacts[i]
