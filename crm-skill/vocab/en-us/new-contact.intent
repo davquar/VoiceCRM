@@ -1,3 +1,7 @@
 (add|create) a new (contact|person) (|to my contacts|to my contact list)
 (add|create) (|a) (|new) (contact|person) (|to my contacts|to my contact list)
 (add|create) someone (|to my contacts|to my contact list)
+(add|create) name {name} surname {surname}
+(add|create) contact name {name} surname {surname}
+(add|create) surname {surname} name {name}
+(add|create) contact surname {surname} name {name}
