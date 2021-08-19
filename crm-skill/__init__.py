@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from lingua_franca.format import nice_date_time, nice_date
+from mycroft_bus_client import MessageBusClient, Message
 from mycroft import MycroftSkill, intent_file_handler
 from mycroft.util import parse
-from mycroft_bus_client import MessageBusClient, Message
 
 from .constants import *
 from .db import *
@@ -35,8 +35,8 @@ class VoiceCRM(MycroftSkill):
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_name = message.data.get("name")
-        utt_surname = message.data.get("surname")
+        utt_name = message.data.get("name")         if message is not None else None
+        utt_surname = message.data.get("surname")   if message is not None else None
 
         while not done:
             if state == 0:
@@ -82,7 +82,8 @@ class VoiceCRM(MycroftSkill):
                 allowed_actions = {ACTION_STOP, ACTION_REPEAT, ACTION_BACK}
                 if not nickname_mandatory:
                     allowed_actions.update({ACTION_SKIP})
-                utt_nickname, action, state = self.wrap_get_response("ask-nickname", state, allowed_actions=allowed_actions, dialog_data={"name": utt_name})
+                utt_nickname, action, state = self.wrap_get_response("ask-nickname", state, allowed_actions=allowed_actions,
+                    dialog_data={"name": utt_name})
                 if action is None:
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_nickname})
                 elif action == ACTION_STOP:
@@ -160,9 +161,9 @@ class VoiceCRM(MycroftSkill):
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("person")
-        utt_datetime = message.data.get("datetime")
-      
+        utt_person = message.data.get("person")     if message is not None else None
+        utt_datetime = message.data.get("datetime") if message is not None else None
+
         while not done:
             if state == 0:
                 if utt_person is not None and utt_datetime is not None:
@@ -252,7 +253,10 @@ class VoiceCRM(MycroftSkill):
                 date = parsed_datetime[0]
 
                 # call the reminder-skill to activate the reminder in mycroft
-                self.bus.emit(Message("recognizer_loop:utterance", {"utterances": [f"remind me to {utt_activity} on {utt_datetime}"], "lang": "en-us"}))
+                self.bus.emit(Message("recognizer_loop:utterance", {"utterances":
+                    [f"remind me to {utt_activity} on {utt_datetime}"],
+                    "lang": "en-us"}
+                ))
                 add_reminder(list_contacts[0], utt_activity, date)
                 done = True
 
@@ -262,9 +266,9 @@ class VoiceCRM(MycroftSkill):
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("person")
-        utt_datetime = message.data.get("datetime")
-        utt_activity = message.data.get("activity")
+        utt_person = message.data.get("person")     if message is not None else None
+        utt_datetime = message.data.get("datetime") if message is not None else None
+        utt_activity = message.data.get("activity") if message is not None else None
 
         # questions can be skipped if all entities exist and are valid
         skip_questions = False
@@ -391,7 +395,7 @@ class VoiceCRM(MycroftSkill):
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("person")
+        utt_person = message.data.get("person") if message is not None else None
 
         while not done:
             if state == 0:
