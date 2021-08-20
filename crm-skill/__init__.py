@@ -134,7 +134,13 @@ class VoiceCRM(MycroftSkill):
                     ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP
                 }, dialog_data={"name": utt_name})
                 if action is None:
-                    contact["birth-date"] = parse.extract_datetime(utt_birth_date)
+                    try:
+                        contact["birth-date"] = parse.extract_datetime(utt_birth_date)
+                    except TypeError:
+                        # in some mysterious occasions, the parser would throw a TypeError
+                        # we can catch it to make the user repeat the date.
+                        # see issue #38
+                        contact["birth-date"] = None
                     if contact["birth-date"] is None:
                         # no datetime found in the utterance --> repeat
                         self.speak_dialog("error-no-date")
@@ -243,7 +249,13 @@ class VoiceCRM(MycroftSkill):
                     if utt_datetime is None:
                         return
 
-                parsed_datetime = parse.extract_datetime(utt_datetime)
+                try:
+                    parsed_datetime = parse.extract_datetime(utt_datetime)
+                except TypeError:
+                    # in some mysterious occasions, the parser would throw a TypeError
+                    # we can catch it to make the user repeat the date.
+                    # see issue #38
+                    parsed_datetime = None
                 if parsed_datetime is None:
                     # no datetime found in the utterance --> repeat
                     self.speak_dialog("error-not-date")
@@ -358,7 +370,13 @@ class VoiceCRM(MycroftSkill):
                 else:
                     state += 1
 
-                parsed_datetime = parse.extract_datetime(utt_datetime)
+                try:
+                    parsed_datetime = parse.extract_datetime(utt_datetime)
+                except TypeError:
+                    # in some mysterious occasions, the parser would throw a TypeError
+                    # we can catch it to make the user repeat the date.
+                    # see issue #38
+                    parsed_datetime = None
                 if parsed_datetime is None:
                     # no datetime found in the utterance --> repeat
                     self.speak_dialog("error-not-date")
