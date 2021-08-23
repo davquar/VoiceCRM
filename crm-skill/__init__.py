@@ -70,11 +70,31 @@ class VoiceCRM(MycroftSkill):
                     state += 1
 
                 nickname_mandatory = False
-                if len(get_contact(utt_name, utt_surname, "")) > 0:
+                list_contacts = get_contact(utt_name, utt_surname, "")
+                similar_contacts = len(list_contacts)
+                if similar_contacts > 0:
                     self.speak_dialog("name-surname-duplicate", {"name": utt_name, "surname": utt_surname})
-                    if self.ask_yesno("ask-sure-another-person") == "yes":
-                        nickname_mandatory = True
-                        continue
+
+                    # ask for contact disambiguation
+                    self.speak_dialog("similar-contacts", {"number": similar_contacts, "name": utt_name})
+                    flag = 0
+                    for i, _ in enumerate(list_contacts):
+                        if list_contacts[i]["nickname"] is None:
+                            identikit="no"
+                        else:
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_name, "nickname": list_contacts[i]["nickname"]})
+                        if identikit == "yes":
+                            self.speak_dialog("error-contact-exists")
+                            return
+                        if identikit == "no":
+                            self.speak_dialog("")
+                        else:
+                            self.speak_dialog("")
+                    if flag == 0:
+                        if self.ask_yesno("ask-sure-another-person") == "yes":
+                            nickname_mandatory = True
+                            continue
+
                     self.speak_dialog("finishing")
                     return
 

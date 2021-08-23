@@ -118,4 +118,3 @@ def add_reminder(contact: dict, act: str, date: datetime):
         "activity": act,
         "date": date
     })
-    
