@@ -1,2 +1,1 @@
-I have found {number} contacts that with that name
-There are {number} people called {name}
+(I have found|there are) {number} {name} in your contacts

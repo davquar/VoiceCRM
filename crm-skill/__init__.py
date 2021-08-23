@@ -73,8 +73,6 @@ class VoiceCRM(MycroftSkill):
                 list_contacts = get_contact(utt_name, utt_surname, "")
                 similar_contacts = len(list_contacts)
                 if similar_contacts > 0:
-                    self.speak_dialog("name-surname-duplicate", {"name": utt_name, "surname": utt_surname})
-
                     # ask for contact disambiguation
                     self.speak_dialog("similar-contacts", {"number": similar_contacts, "name": utt_name})
                     flag = 0
@@ -177,7 +175,7 @@ class VoiceCRM(MycroftSkill):
                     return
 
             if state == 7:
-                self.speak_dialog("finishing")
+                self.speak_dialog("end-new-contact")
                 done = True
                 return contact
 
@@ -424,7 +422,12 @@ class VoiceCRM(MycroftSkill):
                         "date": date
                     })
 
-                self.speak_dialog("finishing")
+                self.speak_dialog("end-new-activity", {
+                    "activity": utt_activity,
+                    "name": contact["name"],
+                    "surname": contact["surname"],
+                    "datetime": date,
+                })
                 done = True
 
     @intent_file_handler("last-activities.intent")
