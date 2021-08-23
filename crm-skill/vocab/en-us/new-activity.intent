@@ -1,3 +1,4 @@
-(|add|create|register|another) (|a) new activity (|with {person})
-(add|create|register|another) (|a) (|new) activity (|with {person})
-(add|create|register) that {datetime} I have done {activity} with {person}
+(|add|create|register|another|record) (|a) new activity (|with {person})
+(add|create|register|another|record) (|a|an) (|new) activity (|with {person})
+(add|create|register|record) that {datetime} I have {activity} with {person}
+(add|create|register|record) that {datetime} we have {activity} with {person}
