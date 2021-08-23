@@ -156,7 +156,7 @@ class VoiceCRM(MycroftSkill):
                 if action is None:
                     try:
                         contact["birth-date"] = parse.extract_datetime(utt_birth_date)
-                    except TypeError:
+                    except Exception:
                         # in some mysterious occasions, the parser would throw a TypeError
                         # we can catch it to make the user repeat the date.
                         # see issue #38
@@ -271,7 +271,7 @@ class VoiceCRM(MycroftSkill):
 
                 try:
                     parsed_datetime = parse.extract_datetime(utt_datetime)
-                except TypeError:
+                except Exception:
                     # in some mysterious occasions, the parser would throw a TypeError
                     # we can catch it to make the user repeat the date.
                     # see issue #38
@@ -392,7 +392,7 @@ class VoiceCRM(MycroftSkill):
 
                 try:
                     parsed_datetime = parse.extract_datetime(utt_datetime)
-                except TypeError:
+                except Exception:
                     # in some mysterious occasions, the parser would throw a TypeError
                     # we can catch it to make the user repeat the date.
                     # see issue #38
