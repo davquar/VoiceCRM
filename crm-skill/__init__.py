@@ -137,8 +137,11 @@ class VoiceCRM(MycroftSkill):
                     ACTION_STOP, ACTION_REPEAT, ACTION_SKIP
                 })
                 if action is None:
-                    contact["gender"] = utt_gender
-                    self.speak_dialog("generic-data-done-repeat", {"data": utt_gender})
+                    if self.voc_match(utt_gender, "genders"):
+                        contact["gender"] = utt_gender
+                        self.speak_dialog("generic-data-done-repeat", {"data": utt_gender})
+                    else:
+                        contact["gender"] = "other"
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return contact
