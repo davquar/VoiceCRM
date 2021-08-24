@@ -190,7 +190,10 @@ class VoiceCRM(MycroftSkill):
                     return
 
             if state == 7:
-                self.speak_dialog("end-new-contact")
+                self.speak_dialog("end-new-contact", {
+                    "name": contact["name"],
+                    "surname": contact["surname"],
+                })
                 done = True
                 return contact
 
