@@ -7,12 +7,14 @@ title Add reminder
 actor User as u
 participant Mycroft as m
 
-u -> m: "new reminder"
+u -> m: "new reminder" utt
 
 == State 0 ==
-m --> u: about whom?
-u -> m: utt
-m -> m: action hotword handling\n(stop, repeat)
+alt utt does not contain {person}
+    m --> u: about whom?
+    u -> m: utt
+    m -> m: action hotword handling\n(stop, repeat)
+end
 
 m -> m: check db
 
@@ -21,8 +23,12 @@ alt contact not found
     u -> m: utt (y/n)
     alt affirmation
         m -> m: call new contact task
+        alt new contact task aborted/failed
+            m --x u: bye
+        end
+        m -> m: get the new contact
+        m -> m: go to next state
     end
-    m -x m
 else multiple contacts
     loop for each contact
         m --> u: do you mean $nickname?
@@ -41,11 +47,13 @@ u -> m: utt
 m -> m: action hotword handling\n(stop, back, repeat)
 
 == State 2 ==
-m --> u: when?
-u -> m: utt
-m -> m: action hotword handling\n(stop, back, repeat)
+alt initial utt does not contain {datetime}
+    m --> u: when?
+    u -> m: utt
+    m -> m: action hotword handling\n(stop, back, repeat)
+end
 
-m -> m: set reminder with given data
+m -> m: set reminder with given datetime
 
 m --> u: bye
 
