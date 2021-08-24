@@ -53,6 +53,8 @@ class VoiceCRM(MycroftSkill):
                 else:
                     state += 1
 
+                self.speak_dialog("generic-data-done-repeat", {"data": utt_surname})
+
             if state == 1:
                 if utt_name is None:
                     utt_name, action, state = self.wrap_get_response("ask-name", state, allowed_actions={
@@ -68,6 +70,8 @@ class VoiceCRM(MycroftSkill):
                         return
                 else:
                     state += 1
+
+                self.speak_dialog("generic-data-done-repeat", {"data": utt_name})
 
                 nickname_mandatory = False
                 list_contacts = get_contact(utt_name, utt_surname, "")
@@ -207,6 +211,8 @@ class VoiceCRM(MycroftSkill):
                     if utt_person is None:
                         return
 
+                self.speak_dialog("generic-data-done-repeat", {"data": utt_gender})
+
                 list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts)<=0:
                     # the contact does not exist --> ask to create
@@ -228,7 +234,6 @@ class VoiceCRM(MycroftSkill):
                         else:
                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
-                            self.speak_dialog("generic-data-done-repeat")
                             list_contacts[0] = list_contacts[i]
                             flag = 1
                             break
@@ -266,6 +271,8 @@ class VoiceCRM(MycroftSkill):
 
                     if utt_datetime is None:
                         return
+
+                self.speak_dialog("generic-data-done-repeat", {"data": utt_datetime})
 
                 try:
                     parsed_datetime = parse.extract_datetime(utt_datetime)
@@ -323,6 +330,8 @@ class VoiceCRM(MycroftSkill):
                     if utt_person is None:
                         return
 
+                self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
+
                 list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts) == 0:
                     should_proceed = self.ask_yesno("ask-create-contact")
@@ -342,7 +351,6 @@ class VoiceCRM(MycroftSkill):
                         else:
                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
-                            self.speak_dialog("generic-data-done-repeat")
                             contact = list_contacts[i]
                             flag=1
                             break
@@ -385,6 +393,9 @@ class VoiceCRM(MycroftSkill):
 
                     if utt_datetime is None:
                         return
+
+                    self.speak_dialog("generic-data-done-repeat", {"data": utt_datetime})
+
                 else:
                     state += 1
 
@@ -455,6 +466,8 @@ class VoiceCRM(MycroftSkill):
                     if utt_person is None:
                         return
 
+                self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
+
                 list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts) <= 0:
                     # the contact does not exist --> ask to create
@@ -471,7 +484,6 @@ class VoiceCRM(MycroftSkill):
                         else:
                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
-                            self.speak_dialog("generic-data-done-repeat", {"data": ""})
                             list_contacts[0] = list_contacts[i]
                             flag = 1
                             break
