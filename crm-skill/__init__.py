@@ -7,6 +7,7 @@ from mycroft.util import parse
 from .constants import *
 from .db import *
 
+
 class VoiceCRM(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
@@ -14,8 +15,7 @@ class VoiceCRM(MycroftSkill):
         self.client.run_in_thread()
 
     def wrap_get_response(self, question: str, state: int, exact_match=False,
-        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP},
-        dialog_data=None):
+        allowed_actions = {ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}, dialog_data=None):
         """Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
         Returns (utterance; user-specified action; next state, based on the action)"""
         utt = self.get_response(question) if dialog_data is None else self.get_response(question, dialog_data)
@@ -101,7 +101,7 @@ class VoiceCRM(MycroftSkill):
                 if not nickname_mandatory:
                     allowed_actions.update({ACTION_SKIP})
                 utt_nickname, action, state = self.wrap_get_response("ask-nickname", state, allowed_actions=allowed_actions,
-                    dialog_data={"name": utt_name})
+                                                                     dialog_data={"name": utt_name})
                 if action is None:
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_nickname})
                 elif action == ACTION_STOP:
@@ -473,20 +473,20 @@ class VoiceCRM(MycroftSkill):
                         if identikit == "yes":
                             self.speak_dialog("generic-data-done-repeat", {"data": ""})
                             list_contacts[0] = list_contacts[i]
-                            flag=1
+                            flag = 1
                             break
                         if identikit == "no":
                             continue
                         continue
-                    if flag==0:
+                    if flag == 0:
                         self.speak_dialog("error-contact-not-found")
                         return
                 if len(list_contacts[0]["activities"]) == 0:
                     self.speak_dialog("no-activities", {"name": list_contacts[0]["name"]})
                     return
-                number_of_activities = 0                                # the position in the list of the activities to read
-                next_step = "repeat"                                    # continue, repeat, back, exit
-                cont_step = 0                                           # already done steps
+                number_of_activities = 0                           # the position in the list of the activities to read
+                next_step = "repeat"                               # continue, repeat, back, exit
+                cont_step = 0                                      # already done steps
                 response_list = ["repeat", "continue", "exit"]
                 while next_step != "exit":
                     cont_step += 1
@@ -518,8 +518,10 @@ class VoiceCRM(MycroftSkill):
                 self.speak_dialog("finishing")
                 done = True
 
+
 def create_skill():
     return VoiceCRM()
+
 
 def make_response_list(cont_step: int, number_of_activities: int, activities_length: int) -> list:
     """Returns the appropriate listing options, basing on the given parameters"""
