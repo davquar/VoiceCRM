@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timezone
 from lingua_franca.format import nice_date_time, nice_date
 from mycroft_bus_client import MessageBusClient, Message
@@ -288,7 +289,22 @@ class VoiceCRM(MycroftSkill):
                     "lang": "en-us"}
                 ))
                 add_reminder(list_contacts[0], utt_activity, date)
-                done = True
+
+            if state == 3:
+                time.sleep(1) # wait for the external skill to avoid race condition
+                spoken_contact = list_contacts[0]["nickname"] if list_contacts[0]["nickname"] != "" else list_contacts[0]["name"]
+                should_repeat = self.ask_yesno("ask-repeat-task-reminder", {
+                    "person": spoken_contact,
+                })
+                if should_repeat == "yes":
+                    # reset fields, and restart from the questions
+                    done = False
+                    utt_person, utt_datetime = None, None
+                    state = 1
+                    continue
+
+            self.speak_dialog("finishing")
+            done = True
 
     @intent_file_handler("new-activity.intent")
     def handle_new_activity(self, message):
@@ -426,9 +442,24 @@ class VoiceCRM(MycroftSkill):
                     "activity": utt_activity,
                     "name": contact["name"],
                     "surname": contact["surname"],
-                    "datetime": date,
+                    "datetime": nice_date_time(date),
                 })
-                done = True
+
+            if state == 3:
+                spoken_contact = contact["nickname"] if contact["nickname"] != "" else contact["name"]
+                should_repeat = self.ask_yesno("ask-repeat-task-contact", {
+                    "person": spoken_contact,
+                })
+                if should_repeat == "yes":
+                    # reset fields, and restart from the questions
+                    done, skip_questions = False, False
+                    utt_person, utt_datetime, utt_activity = None, None, None
+                    state = 1
+                    continue
+
+            self.speak_dialog("finishing")
+            done = True
+
 
     @intent_file_handler("last-activities.intent")
     def handle_last_activities(self, message):
