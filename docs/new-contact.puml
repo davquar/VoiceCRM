@@ -7,52 +7,66 @@ title New contact
 actor User as u
 participant Mycroft as m
 
-u -> m: "new contact"
+u -> m: "new contact" utt
 == State 0 ==
-m --> u: surname?
-u -> m: utt
-m -> m: action hotword handling\n(stop, repeat)
+alt utt does not contain {surname}
+    m --> u: surname?
+    u -> m: utt
+    m -> m: action hotword handling\n(stop, repeat)
+end
 
 == State 1 ==
-m --> u: name?
-u -> m: utt
-m -> m: action hotword handling\n(stop, repeat)
+alt utt does not contain {name}
+    m --> u: name?
+    u -> m: utt
+    m -> m: action hotword handling\n(stop, repeat)
+end
+
+== State DB ==
 
 m -> m: db check
 alt contact exists
+    m --> u: contact exists,\nsure to proceed?
+    u -> m: utt (y/n)
+    alt affirmation
+        m -> m: nickname mandatory = yes
+        m -> m: go to next state
+    end
     m --x u: bye
 end
-m -> m: save contact
 
 == State 2 ==
+m --> u: nickname?
+u -> m: utt
+m -> m: action hotword handling\n(stop, repeat, back,\nskip (if nickname not mandatory))
+alt nickname not unique
+    m --> u: inform
+    m -> m: restart current state
+end
+
+== State 3 ==
+m -> m: save contact
+
+== State 4 ==
 m --> u: more details?
 u -> m: utt (y/n)
 alt negation
     m -x u: end
 end
 
-== State 3 ==
+== State 5 ==
 m --> u: gender?
 u -> m: utt
 m -> m: action hotword handling\n(stop, repeat, back, skip)
 m -> m: save
 
-== State 4 ==
+== State 6 ==
 m --> u: birth date?
 u -> m: utt
 m -> m: action hotword handling\n(stop, repeat, back, skip)
 m -> m: save
 
-== State 5 ==
-m --> u: nickname?
-u -> m: utt
-m -> m: action hotword handling\n(stop, repeat, back, skip)
-alt nickname not unique
-    m --> u: inform
-    m -> m: restart current state
-end
-m -> m: save
-
+== State 7 ==
 m --> u: bye
 
 @enduml

@@ -7,12 +7,14 @@ title New activity
 actor User as u
 participant Mycroft as m
 
-u -> m: "new activity"
+u -> m: "new activity" utt
 
 == State 0 ==
-m --> u: with whom?
-u -> m: utt
-m -> m: action hotword handling\n(stop, repeat)
+alt utt does not containt {person}
+    m --> u: with whom?
+    u -> m: utt
+    m -> m: action hotword handling\n(stop, repeat)
+end
 
 m -> m: check db
 
@@ -21,8 +23,12 @@ alt contact not found
     u -> m: utt (y/n)
     alt affirmation
         m -> m: call new contact task
+        alt new contact task aborted/failed
+            m --x u: bye
+        end
+        m -> m: get the new contact
+        m -> m: go to next state
     end
-    m -x m
 else multiple contacts
     loop for each contact
         m --> u: do you mean $nickname?
@@ -36,16 +42,20 @@ end
 m --x u: bye
 
 == State 1 ==
-m --> u: activity?
-u -> m: utt
-m -> m: action hotword handling\n(stop, back, repeat)
+alt initial utt does not contain {activity}
+    m --> u: activity?
+    u -> m: utt
+    m -> m: action hotword handling\n(stop, back, repeat)
+end
 
 == State 2 ==
-m --> u: when?
-u -> m: utt
-m -> m: action hotword handling\n(stop, back, repeat)
+alt initial utt does not contain {datetime}
+    m --> u: when?
+    u -> m: utt
+    m -> m: action hotword handling\n(stop, back, repeat)
+end
 
-m -> m: set reminder with given data
+m -> m: save activity with given data
 
 m --> u: bye
 

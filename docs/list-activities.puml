@@ -7,12 +7,14 @@ title List activities
 actor User as u
 participant Mycroft as m
 
-u -> m: "list activities"
+u -> m: "list activities" utt
 
 == State 0 ==
-m --> u: about whom?
-u -> m: utt
-m -> m: action hotword handling\n(stop, repeat)
+alt utt does not containt {person}
+    m --> u: about whom?
+    u -> m: utt
+    m -> m: action hotword handling\n(stop, repeat)
+end
 
 m -> m: check db
 
@@ -21,8 +23,12 @@ alt contact not found
     u -> m: utt (y/n)
     alt affirmation
         m -> m: call new contact task
+        alt new contact task aborted/failed
+            m --x u: bye
+        end
+        m -> m: get the new contact
+        m -> m: go to next state
     end
-    m -x m
 else multiple contacts
     loop for each contact
         m --> u: do you mean $nickname?
@@ -35,8 +41,10 @@ else multiple contacts
 m --x u: bye
 end
 
+== State 1 ==
+
 loop listen user action
-    m -> m: check db
+    m -> m: get activities from db
     alt no activities
         m --x u: bye
     end 
