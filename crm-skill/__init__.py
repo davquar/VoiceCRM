@@ -170,7 +170,7 @@ class VoiceCRM(MycroftSkill):
 
                     if contact["birth-date"] is None:
                         # no datetime found in the utterance --> repeat
-                        self.speak_dialog("error-no-date")
+                        self.speak_dialog("error-not-date")
                         state -= 1
                         continue
                     if contact["birth-date"] > datetime.now(tz=timezone.utc):
@@ -222,7 +222,7 @@ class VoiceCRM(MycroftSkill):
                     if utt_person is None:
                         return
 
-                self.speak_dialog("generic-data-done-repeat", {"data": utt_gender})
+                self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
 
                 list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts)<=0:
