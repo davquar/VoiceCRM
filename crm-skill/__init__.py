@@ -1,4 +1,3 @@
-import time
 from datetime import datetime, timezone
 from lingua_franca.format import nice_date_time, nice_date
 from mycroft_bus_client import MessageBusClient, Message
@@ -8,7 +7,6 @@ from mycroft.util import parse
 from .constants import *
 from .db import *
 
-
 class VoiceCRM(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
@@ -16,7 +14,8 @@ class VoiceCRM(MycroftSkill):
         self.client.run_in_thread()
 
     def wrap_get_response(self, question: str, state: int, exact_match=False,
-        allowed_actions = {ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}, dialog_data=None):
+        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP},
+        dialog_data=None):
         """Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
         Returns (utterance; user-specified action; next state, based on the action)"""
         utt = self.get_response(question) if dialog_data is None else self.get_response(question, dialog_data)
@@ -54,8 +53,6 @@ class VoiceCRM(MycroftSkill):
                 else:
                     state += 1
 
-                self.speak_dialog("generic-data-done-repeat", {"data": utt_surname})
-
             if state == 1:
                 if utt_name is None:
                     utt_name, action, state = self.wrap_get_response("ask-name", state, allowed_actions={
@@ -72,32 +69,36 @@ class VoiceCRM(MycroftSkill):
                 else:
                     state += 1
 
-                self.speak_dialog("generic-data-done-repeat", {"data": utt_name})
-
                 nickname_mandatory = False
                 list_contacts = get_contact(utt_name, utt_surname, "")
                 similar_contacts = len(list_contacts)
                 if similar_contacts > 0:
                     # ask for contact disambiguation
-                    self.speak_dialog("similar-contacts", {"number": similar_contacts, "name": utt_name})
-                    flag = 0
+                    self.speak_dialog("similar-contacts", {"number": similar_contacts, "name": utt_name, "surname": utt_surname})
                     for i, _ in enumerate(list_contacts):
-                        if list_contacts[i]["nickname"] is None:
-                            identikit="no"
+                        flag_nickname = True
+                        flag_birthdate = True
+                        if list_contacts[i]["nickname"] is None or (list_contacts[i]["nickname"]==""):
+                            flag_nickname = False
+                        if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
+                            flag_birthdate = False
+                        
+                        if flag_nickname and flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {"name": utt_name, "surname": utt_surname, "nickname": list_contacts[i]["nickname"], "birthdate": list_contacts[i]["birth_date"]})
+                        elif flag_nickname and not flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_name, "surname": utt_surname, "nickname": list_contacts[i]["nickname"]})
+                        elif not flag_nickname and flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact2", {"name": utt_name, "surname": utt_surname, "birthdate": list_contacts[i]["birth_date"]})
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_name, "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact3", {"name": utt_name, "surname": utt_surname})
+                            
                         if identikit == "yes":
-                            self.speak_dialog("error-contact-exists")
-                            return
-                        if identikit == "no":
-                            self.speak_dialog("")
-                        else:
-                            self.speak_dialog("")
-                    if flag == 0:
-                        if self.ask_yesno("ask-sure-another-person") == "yes":
-                            nickname_mandatory = True
-                            continue
-
+                            self.speak_dialog("error-contact-exists", {"name": utt_name, "surname": utt_surname})
+                            return        
+        
+                    if self.ask_yesno("ask-sure-another-person", {"name": utt_name, "surname": utt_surname}) == "yes":
+                        nickname_mandatory = True
+                        continue
                     self.speak_dialog("finishing")
                     return
 
@@ -106,7 +107,7 @@ class VoiceCRM(MycroftSkill):
                 if not nickname_mandatory:
                     allowed_actions.update({ACTION_SKIP})
                 utt_nickname, action, state = self.wrap_get_response("ask-nickname", state, allowed_actions=allowed_actions,
-                                                                     dialog_data={"name": utt_name})
+                    dialog_data={"name": utt_name, "surname": utt_surname})
                 if action is None:
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_nickname})
                 elif action == ACTION_STOP:
@@ -119,7 +120,7 @@ class VoiceCRM(MycroftSkill):
                     return
 
                 if get_contact_by_nickname(utt_nickname) is not None:
-                    self.speak_dialog("error-duplicate-nickname")
+                    self.speak_dialog("error-duplicate-nickname", {"data": utt_nickname})
                     state -= 1
                     continue
 
@@ -139,13 +140,10 @@ class VoiceCRM(MycroftSkill):
             if state == 5:
                 utt_gender, action, state = self.wrap_get_response("ask-gender", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_SKIP
-                })
+                }, dialog_data={"name": utt_name})
                 if action is None:
-                    if self.voc_match(utt_gender, "genders"):
-                        contact["gender"] = utt_gender
-                        self.speak_dialog("generic-data-done-repeat", {"data": utt_gender})
-                    else:
-                        contact["gender"] = "other"
+                    contact["gender"] = utt_gender
+                    self.speak_dialog("generic-data-done-repeat", {"data": utt_gender})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return contact
@@ -161,24 +159,17 @@ class VoiceCRM(MycroftSkill):
                 }, dialog_data={"name": utt_name})
                 if action is None:
                     try:
-                        contact["birth-date"] = parse.extract_datetime(utt_birth_date)[0]
+                        contact["birth-date"] = parse.extract_datetime(utt_birth_date)
                     except Exception:
                         # in some mysterious occasions, the parser would throw a TypeError
                         # we can catch it to make the user repeat the date.
                         # see issue #38
                         contact["birth-date"] = None
-
                     if contact["birth-date"] is None:
                         # no datetime found in the utterance --> repeat
-                        self.speak_dialog("error-not-date")
+                        self.speak_dialog("error-no-date")
                         state -= 1
                         continue
-                    if contact["birth-date"] > datetime.now(tz=timezone.utc):
-                        contact["birth-date"] = None
-                        self.speak_dialog("error-datetime-future")
-                        state -= 1
-                        continue
-
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_birth_date})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
@@ -190,10 +181,7 @@ class VoiceCRM(MycroftSkill):
                     return
 
             if state == 7:
-                self.speak_dialog("end-new-contact", {
-                    "name": contact["name"],
-                    "surname": contact["surname"],
-                })
+                self.speak_dialog("end-new-contact")
                 done = True
                 return contact
 
@@ -225,8 +213,6 @@ class VoiceCRM(MycroftSkill):
                     if utt_person is None:
                         return
 
-                self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
-
                 list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts)<=0:
                     # the contact does not exist --> ask to create
@@ -240,21 +226,31 @@ class VoiceCRM(MycroftSkill):
                         return
 
                 elif len(list_contacts)>1:
-                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": utt_person})
+                    self.speak_dialog("similar-contacts2", {"number": len(list_contacts), "name": utt_person})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
-                        if list_contacts[i]["nickname"] is None:
-                            identikit="no"
+                        flag_nickname = True
+                        flag_birthdate = True
+                        if list_contacts[i]["nickname"] is None or (list_contacts[i]["nickname"]==""):
+                            flag_nickname = False
+                        if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
+                            flag_birthdate = False
+                        
+                        if flag_nickname and flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"], "birthdate": list_contacts[i]["birth_date"]})
+                        elif flag_nickname and not flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"]})
+                        elif not flag_nickname and flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact2", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "birthdate": list_contacts[i]["birth_date"]})
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact3", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"]})
+                            
                         if identikit == "yes":
+                            #self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                             list_contacts[0] = list_contacts[i]
                             flag = 1
                             break
-                        if identikit == "no":
-                            self.speak_dialog("")
-                        else:
-                            self.speak_dialog("")
+        
                     if flag == 0:
                         self.speak_dialog("error-contact-not-found")
                         return
@@ -286,8 +282,6 @@ class VoiceCRM(MycroftSkill):
                     if utt_datetime is None:
                         return
 
-                self.speak_dialog("generic-data-done-repeat", {"data": utt_datetime})
-
                 try:
                     parsed_datetime = parse.extract_datetime(utt_datetime)
                 except Exception:
@@ -303,34 +297,13 @@ class VoiceCRM(MycroftSkill):
 
                 date = parsed_datetime[0]
 
-                if date < datetime.now(tz=timezone.utc):
-                    utt_datetime = None
-                    self.speak_dialog("error-datetime-past")
-                    state -= 1
-                    continue
-
                 # call the reminder-skill to activate the reminder in mycroft
                 self.bus.emit(Message("recognizer_loop:utterance", {"utterances":
                     [f"remind me to {utt_activity} on {utt_datetime}"],
                     "lang": "en-us"}
                 ))
                 add_reminder(list_contacts[0], utt_activity, date)
-
-            if state == 3:
-                time.sleep(1) # wait for the external skill to avoid race condition
-                spoken_contact = list_contacts[0]["nickname"] if list_contacts[0]["nickname"] != "" else list_contacts[0]["name"]
-                should_repeat = self.ask_yesno("ask-repeat-task-reminder", {
-                    "person": spoken_contact,
-                })
-                if should_repeat == "yes":
-                    # reset fields, and restart from the questions
-                    done = False
-                    utt_person, utt_datetime = None, None
-                    state = 1
-                    continue
-
-            self.speak_dialog("finishing")
-            done = True
+                done = True
 
     @intent_file_handler("new-activity.intent")
     def handle_new_activity(self, message):
@@ -365,8 +338,6 @@ class VoiceCRM(MycroftSkill):
                     if utt_person is None:
                         return
 
-                self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
-
                 list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts) == 0:
                     should_proceed = self.ask_yesno("ask-create-contact")
@@ -378,24 +349,35 @@ class VoiceCRM(MycroftSkill):
                         self.speak_dialog("finishing")
                         return
                 if len(list_contacts) > 1:
-                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": utt_person})
+                    self.speak_dialog("similar-contacts2", {"number": len(list_contacts), "name": utt_person})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
-                        if list_contacts[i]["nickname"] is None:
-                            identikit="no"
+                        flag_nickname = True
+                        flag_birthdate = True
+                        if list_contacts[i]["nickname"] is None or (list_contacts[i]["nickname"]==""):
+                            flag_nickname = False
+                        if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
+                            flag_birthdate = False
+                        
+                        if flag_nickname and flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"], "birthdate": list_contacts[i]["birth_date"]})
+                        elif flag_nickname and not flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"]})
+                        elif not flag_nickname and flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact2", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "birthdate": list_contacts[i]["birth_date"]})
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact3", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"]})
+                            
                         if identikit == "yes":
+                            #self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                             contact = list_contacts[i]
-                            flag=1
+                            flag = 1
                             break
-                        if identikit == "no":
-                            self.speak_dialog("")
-                        else:
-                            self.speak_dialog("")
+        
                     if flag == 0:
                         self.speak_dialog("error-contact-not-found")
                         return
+
                 else:
                     contact = list_contacts[0]
 
@@ -428,9 +410,6 @@ class VoiceCRM(MycroftSkill):
 
                     if utt_datetime is None:
                         return
-
-                    self.speak_dialog("generic-data-done-repeat", {"data": utt_datetime})
-
                 else:
                     state += 1
 
@@ -449,12 +428,6 @@ class VoiceCRM(MycroftSkill):
                     continue
 
                 date = parsed_datetime[0]
-
-                if date > datetime.now(tz=timezone.utc):
-                    self.speak_dialog("error-datetime-future")
-                    state -= 1
-                    skip_questions = False
-                    continue
 
                 index = 0
                 too_short = True
@@ -478,24 +451,9 @@ class VoiceCRM(MycroftSkill):
                     "activity": utt_activity,
                     "name": contact["name"],
                     "surname": contact["surname"],
-                    "datetime": nice_date_time(date),
+                    "datetime": date,
                 })
-
-            if state == 3:
-                spoken_contact = contact["nickname"] if contact["nickname"] != "" else contact["name"]
-                should_repeat = self.ask_yesno("ask-repeat-task-contact", {
-                    "person": spoken_contact,
-                })
-                if should_repeat == "yes":
-                    # reset fields, and restart from the questions
-                    done, skip_questions = False, False
-                    utt_person, utt_datetime, utt_activity = None, None, None
-                    state = 1
-                    continue
-
-            self.speak_dialog("finishing")
-            done = True
-
+                done = True
 
     @intent_file_handler("last-activities.intent")
     def handle_last_activities(self, message):
@@ -522,8 +480,6 @@ class VoiceCRM(MycroftSkill):
                     if utt_person is None:
                         return
 
-                self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
-
                 list_contacts = get_all_contacts(utt_person)
                 if len(list_contacts) <= 0:
                     # the contact does not exist --> ask to create
@@ -532,29 +488,41 @@ class VoiceCRM(MycroftSkill):
                         self.handle_new_contact(None)
                     return
                 if len(list_contacts) > 1:
-                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": utt_person})
+                    self.speak_dialog("similar-contacts2", {"number": len(list_contacts), "name": utt_person})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
-                        if list_contacts[i]["nickname"] is None:
-                            identikit="no"
+                        flag_nickname = True
+                        flag_birthdate = True
+                        if list_contacts[i]["nickname"] is None or (list_contacts[i]["nickname"]==""):
+                            flag_nickname = False
+                        if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
+                            flag_birthdate = False
+                        
+                        if flag_nickname and flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"], "birthdate": list_contacts[i]["birth_date"]})
+                        elif flag_nickname and not flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"]})
+                        elif not flag_nickname and flag_birthdate:
+                             identikit = self.ask_yesno("ask-disambiguate-contact2", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "birthdate": list_contacts[i]["birth_date"]})
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact3", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"]})
+                            
                         if identikit == "yes":
+                            #self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                             list_contacts[0] = list_contacts[i]
                             flag = 1
                             break
-                        if identikit == "no":
-                            continue
-                        continue
+        
                     if flag == 0:
                         self.speak_dialog("error-contact-not-found")
                         return
+                        
                 if len(list_contacts[0]["activities"]) == 0:
                     self.speak_dialog("no-activities", {"name": list_contacts[0]["name"]})
                     return
-                number_of_activities = 0                           # the position in the list of the activities to read
-                next_step = "repeat"                               # continue, repeat, back, exit
-                cont_step = 0                                      # already done steps
+                number_of_activities = 0                                # the position in the list of the activities to read
+                next_step = "repeat"                                    # continue, repeat, back, exit
+                cont_step = 0                                           # already done steps
                 response_list = ["repeat", "continue", "exit"]
                 while next_step != "exit":
                     cont_step += 1
@@ -586,10 +554,8 @@ class VoiceCRM(MycroftSkill):
                 self.speak_dialog("finishing")
                 done = True
 
-
 def create_skill():
     return VoiceCRM()
-
 
 def make_response_list(cont_step: int, number_of_activities: int, activities_length: int) -> list:
     """Returns the appropriate listing options, basing on the given parameters"""
