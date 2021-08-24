@@ -141,8 +141,11 @@ class VoiceCRM(MycroftSkill):
                     ACTION_STOP, ACTION_REPEAT, ACTION_SKIP
                 })
                 if action is None:
-                    contact["gender"] = utt_gender
-                    self.speak_dialog("generic-data-done-repeat", {"data": utt_gender})
+                    if self.voc_match(utt_gender, "genders"):
+                        contact["gender"] = utt_gender
+                        self.speak_dialog("generic-data-done-repeat", {"data": utt_gender})
+                    else:
+                        contact["gender"] = "other"
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return contact
@@ -158,17 +161,24 @@ class VoiceCRM(MycroftSkill):
                 }, dialog_data={"name": utt_name})
                 if action is None:
                     try:
-                        contact["birth-date"] = parse.extract_datetime(utt_birth_date)
+                        contact["birth-date"] = parse.extract_datetime(utt_birth_date)[0]
                     except Exception:
                         # in some mysterious occasions, the parser would throw a TypeError
                         # we can catch it to make the user repeat the date.
                         # see issue #38
                         contact["birth-date"] = None
+
                     if contact["birth-date"] is None:
                         # no datetime found in the utterance --> repeat
                         self.speak_dialog("error-no-date")
                         state -= 1
                         continue
+                    if contact["birth-date"] > datetime.now(tz=timezone.utc):
+                        contact["birth-date"] = None
+                        self.speak_dialog("error-datetime-future")
+                        state -= 1
+                        continue
+
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_birth_date})
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
@@ -289,6 +299,12 @@ class VoiceCRM(MycroftSkill):
                     continue
 
                 date = parsed_datetime[0]
+
+                if date < datetime.now(tz=timezone.utc):
+                    utt_datetime = None
+                    self.speak_dialog("error-datetime-past")
+                    state -= 1
+                    continue
 
                 # call the reminder-skill to activate the reminder in mycroft
                 self.bus.emit(Message("recognizer_loop:utterance", {"utterances":
@@ -430,6 +446,12 @@ class VoiceCRM(MycroftSkill):
                     continue
 
                 date = parsed_datetime[0]
+
+                if date > datetime.now(tz=timezone.utc):
+                    self.speak_dialog("error-datetime-future")
+                    state -= 1
+                    skip_questions = False
+                    continue
 
                 index = 0
                 too_short = True
