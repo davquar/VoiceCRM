@@ -1,59 +1,61 @@
 from datetime import datetime, timezone
+from .constants import *
 
 contacts = [
-   {
+    {
+        "id": 0,
         "name": "michael",
         "surname": "jordan",
-        "nickname": "air",
+        "nickname": "",
         "birth_date": "",
         "activities": [
             {"activity": "bar", "date": datetime(2021, 4, 5, 21, 0, tzinfo=timezone.utc)},
-            {"activity": "nada","date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
+            {"activity": "nada", "date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
             {"activity": "cinema", "date": datetime(2021, 3, 26, tzinfo=timezone.utc)}
         ],
-        "reminders": []
-    },
-       {
-        "name": "michael",
-        "surname": "jordan",
-        "nickname": "mortadella",
-        "birth_date": "",
-        "activities": [
-            {"activity": "bar", "date": datetime(2021, 4, 5, 21, 0, tzinfo=timezone.utc)},
-            {"activity": "nada","date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
-            {"activity": "cinema", "date": datetime(2021, 3, 26, tzinfo=timezone.utc)}
-        ],
-        "reminders": []
+        "reminders": [],
+        "relationships": set()
     },
     {
+        "id": 1,
         "name": "elon",
         "surname": "musk",
         "nickname": "rocket guy",
         "birth_date": "",
         "activities": [
             {"activity": "pizza", "date": datetime(2021, 4, 5, tzinfo=timezone.utc)},
-            {"activity": "cannelloni","date": datetime(2021, 4, 2, tzinfo=timezone.utc)},
+            {"activity": "cannelloni", "date": datetime(2021, 4, 2, tzinfo=timezone.utc)},
             {"activity": "tennis", "date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
-            {"activity": "bungee jumping","date": datetime(2021, 3, 8, tzinfo=timezone.utc)},
+            {"activity": "bungee jumping", "date": datetime(2021, 3, 8, tzinfo=timezone.utc)},
             {"activity": "cinema", "date": datetime(2021, 2, 28, tzinfo=timezone.utc)},
             {"activity": "new year's eve", "date": datetime(2021, 1, 1, tzinfo=timezone.utc)},
         ],
-        "reminders": []
+        "reminders": [],
+        "relationships": set()
     }
 ]
+
 
 def add_contact(name: str, surname: str, nickname=""):
     """Create new contact with the given name and surname"""
     contacts.append({
+        "id": len(contacts),
         "name": name,
         "surname": surname,
         "nickname": nickname,
-        "birth_date": "",
-        "birth_date": "",
-        "gender": "",
         "activities": [],
-        "reminders": []
+        "reminders": [],
+        "relationships": set()
     })
+
+
+def get_contact_by_id(contact_id: int) -> dict:
+    """Returns the (first/only) contact with the given id"""
+    for item in contacts:
+        if item["id"] == contact_id:
+            return item
+    return None
+
 
 def get_contact_by_nickname(nickname: str) -> dict:
     """Returns the (first/only) contact with the given nickname"""
@@ -62,17 +64,20 @@ def get_contact_by_nickname(nickname: str) -> dict:
             return item
     return None
 
+
 def get_contact(name: str, surname: str, nickname: str) -> list:
     """Returns all the contacts with the given name, surname and nickname
     An empty argument means that it should not be considered in the search"""
     return list(
         filter(
-            lambda contact: (contact["name"] == name or name=="") and
-            (contact["surname"] == surname or surname=="") and
-            (contact["nickname"] == nickname or nickname==""), contacts))
+            lambda contact: (contact["name"] == name or name == "") and
+            (contact["surname"] == surname or surname == "") and
+            (contact["nickname"] == nickname or nickname == ""), contacts))
+
 
 def get_all_name_surname_nick(string: str) -> list:
-    """Returns (raw) all the contacts which name or surname or nickname (or a combination of them) matches the given string"""
+    """Returns (raw) all the contacts which name or surname or nickname (or a combination of them) matches
+    the given string """
     lis = string.split(" ")
     if len(lis) == 1:
         return [["", "", lis[0]], ["", lis[0], "" ], [lis[0], "", ""]]
@@ -119,6 +124,7 @@ def get_all_name_surname_nick(string: str) -> list:
             res.append(app)
     return res
 
+
 def get_all_contacts(string: str) -> list:
     """Wraps all_name_surname_nick"""
     list_contacts = []
@@ -127,9 +133,18 @@ def get_all_contacts(string: str) -> list:
         list_contacts += get_contact(name=item[0], surname=item[1], nickname=item[2])
     return list_contacts
 
+
 def add_reminder(contact: dict, act: str, date: datetime):
     """Adds the given activity and date to the given contact"""
     contact["reminders"].append({
         "activity": act,
         "date": date
     })
+
+
+def add_relationship(id1, id2, rp):
+    """Adds a relationship between contact with id1 and contact with id2 and vice versa."""
+    contact1 = get_contact_by_id(id1)
+    contact2 = get_contact_by_id(id2)
+    contact1["relationships"].add(rp)
+    contact2["relationships"].add(RP_INVERSE[rp])
