@@ -133,6 +133,8 @@ class VoiceCRM(MycroftSkill):
                     self.speak_dialog("finishing")
                     return
                 else:
+                    add_contact(utt_name, utt_surname, "")
+                    state += 1
                     continue
 
                 if utt_nickname is None:
