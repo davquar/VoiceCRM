@@ -6,7 +6,7 @@ contacts = [
         "id": 0,
         "name": "michael",
         "surname": "jordan",
-        "nickname": "",
+        "nickname": "air",
         "birth_date": "",
         "activities": [
             {"activity": "bar", "date": datetime(2021, 4, 5, 21, 0, tzinfo=timezone.utc)},
@@ -15,6 +15,18 @@ contacts = [
         ],
         "reminders": [],
         "relationships": set()
+    },
+    {
+	"id": 2,
+        "name": "michael",
+        "surname": "jordan",
+        "nickname": "mortadella",
+        "birth_date": "",
+        "activities": [
+            {"activity": "bar", "date": datetime(2021, 4, 5, 21, 0, tzinfo=timezone.utc)},
+            {"activity": "nada","date": datetime(2021, 4, 1, tzinfo=timezone.utc)}
+        ],
+        "reminders": []
     },
     {
         "id": 1,
@@ -43,6 +55,8 @@ def add_contact(name: str, surname: str, nickname=""):
         "name": name,
         "surname": surname,
         "nickname": nickname,
+        "birth_date": "",
+        "gender": "",
         "activities": [],
         "reminders": [],
         "relationships": set()
