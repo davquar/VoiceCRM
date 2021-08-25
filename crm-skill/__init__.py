@@ -80,28 +80,41 @@ class VoiceCRM(MycroftSkill):
                 if similar_contacts > 0:
                     # ask for contact disambiguation
                     self.speak_dialog("similar-contacts", {"number": similar_contacts, "name": utt_name})
-       
+
                     for i, _ in enumerate(list_contacts):
-			flag_nickname = True
+                        flag_nickname = True
                         flag_birthdate = True
                         if list_contacts[i]["nickname"] is None or (list_contacts[i]["nickname"]==""):
                             flag_nickname = False
                         if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
                             flag_birthdate = False
-                  
+
                         if flag_nickname and flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {"name": utt_name, "surname": utt_surname, "nickname": list_contacts[i]["nickname"], "birthdate": list_contacts[i]["birth_date"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {
+                                "name": utt_name,
+                                "surname": utt_surname,
+                                "nickname": list_contacts[i]["nickname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
                         elif flag_nickname and not flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_name, "surname": utt_surname, "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {
+                                "name": utt_name,
+                                "surname": utt_surname,
+                                "nickname": list_contacts[i]["nickname"]
+                            })
                         elif not flag_nickname and flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {"name": utt_name, "surname": utt_surname, "birthdate": list_contacts[i]["birth_date"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {
+                                "name": utt_name,
+                                "surname": utt_surname,
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
                         else:
                             identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {"name": utt_name, "surname": utt_surname})
-                            
+
                         if identikit == "yes":
                             self.speak_dialog("error-contact-exists", {"name": utt_name, "surname": utt_surname})
-                            return        
-        
+                            return
+
                     if self.ask_yesno("ask-sure-another-person", {"name": utt_name, "surname": utt_surname}) == "yes":
                         nickname_mandatory = True
                         continue
@@ -256,22 +269,38 @@ class VoiceCRM(MycroftSkill):
                             flag_nickname = False
                         if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
                             flag_birthdate = False
-                        
+
                         if flag_nickname and flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"], "birthdate": list_contacts[i]["birth_date"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
                         elif flag_nickname and not flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"]
+                            })
                         elif not flag_nickname and flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "birthdate": list_contacts[i]["birth_date"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"]})
-                            
+                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"]
+                            })
+
                         if identikit == "yes":
                             #self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                             list_contacts[0] = list_contacts[i]
                             flag = 1
                             break
-        
+
                     if flag == 0:
                         self.speak_dialog("error-contact-not-found")
                         return
@@ -404,22 +433,38 @@ class VoiceCRM(MycroftSkill):
                             flag_nickname = False
                         if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
                             flag_birthdate = False
-                        
+
                         if flag_nickname and flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"], "birthdate": list_contacts[i]["birth_date"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
                         elif flag_nickname and not flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"]
+                            })
                         elif not flag_nickname and flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "birthdate": list_contacts[i]["birth_date"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"]})
-                            
+                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"]
+                            })
+
                         if identikit == "yes":
                             #self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                             contact = list_contacts[i]
                             flag = 1
                             break
-        
+
                     if flag == 0:
                         self.speak_dialog("error-contact-not-found")
                         return
@@ -570,22 +615,38 @@ class VoiceCRM(MycroftSkill):
                             flag_nickname = False
                         if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
                             flag_birthdate = False
-                        
+
                         if flag_nickname and flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"], "birthdate": list_contacts[i]["birth_date"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
                         elif flag_nickname and not flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "nickname": list_contacts[i]["nickname"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"]
+                            })
                         elif not flag_nickname and flag_birthdate:
-                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"], "birthdate": list_contacts[i]["birth_date"]})
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {"name": list_contacts[i]["name"], "surname": list_contacts[i]["surname"]})
-                            
+                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"]
+                            })
+
                         if identikit == "yes":
                             #self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                             list_contacts[0] = list_contacts[i]
                             flag = 1
                             break
-        
+
                     if flag == 0:
                         self.speak_dialog("error-contact-not-found")
                         return
