@@ -309,15 +309,18 @@ class VoiceCRM(MycroftSkill):
                     state -= 1
                     continue
 
+                self.disable_intent("add-reminder.intent")
+
                 # call the reminder-skill to activate the reminder in mycroft
                 self.bus.emit(Message("recognizer_loop:utterance", {"utterances":
-                    [f"remind me to {utt_activity} on {utt_datetime}"],
+                    [f"remind me to {utt_activity} related to {utt_person} on {utt_datetime}"],
                     "lang": "en-us"}
                 ))
                 add_reminder(list_contacts[0], utt_activity, date)
 
             if state == 3:
                 time.sleep(1) # wait for the external skill to avoid race condition
+                self.enable_intent("add-reminder.intent")
                 spoken_contact = list_contacts[0]["nickname"] if list_contacts[0]["nickname"] != "" else list_contacts[0]["name"]
                 should_repeat = self.ask_yesno("ask-repeat-task-reminder", {
                     "person": spoken_contact,
