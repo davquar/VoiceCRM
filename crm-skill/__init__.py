@@ -15,7 +15,7 @@ class VoiceCRM(MycroftSkill):
         self.client.run_in_thread()
 
     def wrap_get_response(self, question: str, state: int, exact_match=False,
-        allowed_actions = {ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}, dialog_data=None):
+                          allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}, dialog_data=None):
         """Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
         Returns (utterance; user-specified action; next state, based on the action)"""
         utt = self.get_response(question) if dialog_data is None else self.get_response(question, dialog_data)
@@ -338,7 +338,7 @@ class VoiceCRM(MycroftSkill):
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         if list_contacts[i]["nickname"] is None:
-                            identikit="no"
+                            identikit = "no"
                         else:
                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
@@ -467,7 +467,7 @@ class VoiceCRM(MycroftSkill):
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         if list_contacts[i]["nickname"] is None:
-                            identikit="no"
+                            identikit = "no"
                         else:
                             identikit = self.ask_yesno("ask-disambiguate-contact", {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
                         if identikit == "yes":
@@ -515,6 +515,131 @@ class VoiceCRM(MycroftSkill):
                         number_of_activities = (cont_step - 2) * 5
                         cont_step -= 2
 
+                self.speak_dialog("finishing")
+                done = True
+
+    @intent_file_handler("add-relationships.intent")
+    def handle_add_relationships(self, message):
+        done = False
+        state = 0
+
+        # get entities if the user used a compact phrase
+        utt_person = message.data.get("person") if message is not None else None
+
+        while not done:
+            if state == 0:
+                if utt_person is not None:
+                    state += 1
+                else:
+                    utt_person, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
+                        ACTION_STOP, ACTION_REPEAT
+                    })
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action == ACTION_REPEAT:
+                        continue
+
+                    if utt_person is None:
+                        return
+
+                list_contacts = get_all_contacts(utt_person)
+                if len(list_contacts) == 0:
+                    should_proceed = self.ask_yesno("ask-create-contact")
+                    if should_proceed == "yes":
+                        list_contacts = [self.handle_new_contact(None)]
+                        if list_contacts[0] is None:
+                            return
+                    else:
+                        self.speak_dialog("finishing")
+                        return
+                if len(list_contacts) > 1:
+                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": utt_person})
+                    flag = 0
+                    for i, _ in enumerate(list_contacts):
+                        if list_contacts[i]["nickname"] is None:
+                            identikit = "no"
+                        else:
+                            identikit = self.ask_yesno("ask-disambiguate-contact",
+                                                       {"name": utt_person, "nickname": list_contacts[i]["nickname"]})
+                        if identikit == "yes":
+                            self.speak_dialog("generic-data-done-repeat")
+                            contact = list_contacts[i]
+                            flag = 1
+                            break
+                        if identikit == "no":
+                            self.speak_dialog("")
+                        else:
+                            self.speak_dialog("")
+                    if flag == 0:
+                        self.speak_dialog("error-contact-not-found")
+                        return
+                else:
+                    contact = list_contacts[0]
+
+            if state == 1:
+                utt_relationship, action, state = self.wrap_get_response("Which relationship?", state,
+                    allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
+                if action == ACTION_STOP:
+                    self.speak_dialog("finishing")
+                    return
+                if action == ACTION_REPEAT:
+                    continue
+
+                found_rp = None
+                for current_rp in RP_INVERSE:
+                    if self.voc_match(utt_relationship, current_rp, exact=True):
+                        found_rp = current_rp
+                        state += 1
+                        break
+
+            if state == 2:
+                utt_person2, action, state = self.wrap_get_response(f"Whose {found_rp} are they?", state,
+                    allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
+                if action == ACTION_STOP:
+                    self.speak_dialog("finishing")
+                    return
+                if action == ACTION_REPEAT:
+                    continue
+                if utt_person2 is None:
+                    return
+
+                list_contacts = get_all_contacts(utt_person2)
+                if len(list_contacts) == 0:
+                    should_proceed = self.ask_yesno("ask-create-contact")
+                    if should_proceed == "yes":
+                        list_contacts = [self.handle_new_contact(None)]
+                        if list_contacts[0] is None:
+                            return
+                    else:
+                        self.speak_dialog("finishing")
+                        return
+                if len(list_contacts) > 1:
+                    self.speak_dialog("similar-contacts", {"number": len(list_contacts), "name": utt_person2})
+                    flag = 0
+                    for i, _ in enumerate(list_contacts):
+                        if list_contacts[i]["nickname"] is None:
+                            identikit = "no"
+                        else:
+                            identikit = self.ask_yesno("ask-disambiguate-contact",
+                                                       {"name": utt_person2, "nickname": list_contacts[i]["nickname"]})
+                        if identikit == "yes":
+                            self.speak_dialog("generic-data-done-repeat")
+                            contact2 = list_contacts[i]
+                            flag = 1
+                            break
+                        if identikit == "no":
+                            self.speak_dialog("")
+                        else:
+                            self.speak_dialog("")
+                    if flag == 0:
+                        self.speak_dialog("error-contact-not-found")
+                        return
+                else:
+                    contact2 = list_contacts[0]
+
+            if state == 3:
+                add_relationship(contact["contact_id"], contact2["contact_id"], found_rp)
                 self.speak_dialog("finishing")
                 done = True
 

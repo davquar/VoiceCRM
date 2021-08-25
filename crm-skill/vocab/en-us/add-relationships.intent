@@ -1,0 +1,8 @@
+(add|create|set) (relationship|relation|affair)
+(add|create|set) a (relationship|relation|affair)
+(add|create|set) an (relationship|relation|affair)
+(add|create|set) a new (relationship|relation|affair)
+(add|create|set) (relationship|relation|affair) (about|related to|with) {person}
+(add|create|set) a (relationship|relation|affair) (about|related to|with) {person}
+(add|create|set) an (relationship|relation|affair) (about|related to|with) {person}
+(add|create|set) a new (relationship|relation|affair) (about|related to|with) {person}
