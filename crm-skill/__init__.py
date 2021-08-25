@@ -497,7 +497,7 @@ class VoiceCRM(MycroftSkill):
 
             if state == 3:
                 spoken_contact = contact["nickname"] if contact["nickname"] != "" else contact["name"]
-                should_repeat = self.ask_yesno("ask-repeat-task-contact", {
+                should_repeat = self.ask_yesno("ask-repeat-task-activity", {
                     "person": spoken_contact,
                 })
                 if should_repeat == "yes":
