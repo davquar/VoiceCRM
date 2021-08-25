@@ -15,19 +15,33 @@ class VoiceCRM(MycroftSkill):
         self.client = MessageBusClient()
         self.client.run_in_thread()
 
-    def wrap_get_response(self, question: str, state: int, exact_match=False,
+    def wrap_get_response(self, question: str, state: int,
         allowed_actions = {ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}, dialog_data=None):
         """Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
         Returns (utterance; user-specified action; next state, based on the action)"""
         utt = self.get_response(question) if dialog_data is None else self.get_response(question, dialog_data)
         if allowed_actions is not None:
             for action in allowed_actions:
-                if self.voc_match(utt, action, exact=exact_match):
+                # try an exact match
+                if self.voc_match(utt, action, exact=True):
                     if action == ACTION_BACK:
                         state = state - 1
                     elif action == ACTION_SKIP:
                         state = state + 1
                     return utt, action, state
+
+                # if no exact match, check if the utterance contains an action word
+                if self.voc_match(utt, action, exact=False):
+                    if action == ACTION_BACK and self.ask_yesno("ask-confirmation-back") == "yes":
+                        state = state - 1
+                    elif action == ACTION_SKIP and self.ask_yesno("ask-confirmation-skip") == "yes":
+                        state = state + 1
+                    elif action == ACTION_STOP and self.ask_yesno("ask-confirmation-stop") == "yes":
+                        return utt, action, state
+                    elif action == ACTION_REPEAT and self.ask_yesno("ask-confirmation-repeat") == "yes":
+                        return utt, action, state
+
+        # default: no action words; regular data
         return utt, None, state + 1
 
     @intent_file_handler("new-contact.intent")
