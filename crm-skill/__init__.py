@@ -16,7 +16,7 @@ class VoiceCRM(MycroftSkill):
         self.client.run_in_thread()
 
     def wrap_get_response(self, question: str, state: int,
-        allowed_actions = {ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}, dialog_data=None):
+        allowed_actions = {ACTION_STOP, ACTION_REPEAT, ACTION_BACK, ACTION_SKIP}, dialog_data=None, reject_stopwords=False):
         """Wraps the self.get_response method with logic to simplify handling multiple states of a specific task.
         Returns (utterance; user-specified action; next state, based on the action)"""
         utt = self.get_response(question) if dialog_data is None else self.get_response(question, dialog_data)
@@ -42,6 +42,13 @@ class VoiceCRM(MycroftSkill):
                         return utt, action, state
 
         # default: no action words; regular data
+        # if the utterance contains potentially bad data, ask for confirmation
+        if reject_stopwords and self.voc_match(utt, "stopwords"):
+            if self.ask_yesno("ask-confirmation-good-data", {"utt": utt}) != "yes":
+                self.log.info("said no")
+                return None, ACTION_REPEAT, state
+
+        # everything smooth with the utterance; increment the state
         return utt, None, state + 1
 
     @intent_file_handler("new-contact.intent")
@@ -58,7 +65,9 @@ class VoiceCRM(MycroftSkill):
                 if utt_surname is None:
                     utt_surname, action, state = self.wrap_get_response("ask-surname", state, allowed_actions={
                         ACTION_STOP, ACTION_REPEAT
-                    })
+                    }, reject_stopwords=True)
+                    if action == ACTION_REPEAT:
+                        continue
                     if action == ACTION_STOP:
                         self.speak_dialog("finishing")
                         return
@@ -74,7 +83,7 @@ class VoiceCRM(MycroftSkill):
                 if utt_name is None:
                     utt_name, action, state = self.wrap_get_response("ask-name", state, allowed_actions={
                         ACTION_STOP, ACTION_REPEAT, ACTION_BACK
-                    })
+                    }, reject_stopwords=True)
                     if action in (ACTION_REPEAT, ACTION_BACK):
                         continue
                     if action == ACTION_STOP:
@@ -140,7 +149,8 @@ class VoiceCRM(MycroftSkill):
                 if not nickname_mandatory:
                     allowed_actions.update({ACTION_SKIP})
                 utt_nickname, action, state = self.wrap_get_response("ask-nickname", state, allowed_actions=allowed_actions,
-                                                                     dialog_data={"name": utt_name, "surname": utt_surname})
+                                                                     dialog_data={"name": utt_name, "surname": utt_surname},
+                                                                     reject_stopwords=True)
                 if action is None:
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_nickname})
                 elif action == ACTION_STOP:
@@ -175,7 +185,7 @@ class VoiceCRM(MycroftSkill):
             if state == 5:
                 utt_gender, action, state = self.wrap_get_response("ask-gender", state, allowed_actions={
                     ACTION_STOP, ACTION_REPEAT, ACTION_SKIP
-                }, dialog_data={"name": utt_name})
+                }, dialog_data={"name": utt_name}, reject_stopwords=True)
                 if action is None:
                     if self.voc_match(utt_gender, "genders"):
                         contact["gender"] = utt_gender
