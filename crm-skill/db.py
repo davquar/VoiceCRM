@@ -89,10 +89,15 @@ def get_contact(name: str, surname: str, nickname: str) -> list:
             (contact["nickname"] == nickname or nickname == ""), contacts))
 
 
-def get_all_name_surname_nick(string: str) -> list:
+def get_all_name_surname_nick(string: str, mycroft=None) -> list:
     """Returns (raw) all the contacts which name or surname or nickname (or a combination of them) matches
     the given string """
     lis = string.split(" ")
+
+    # it this is the 1st call, then remove stopwords
+    if mycroft is not None:
+        lis = remove_stopwords(lis, mycroft)
+
     if len(lis) == 1:
         return [["", "", lis[0]], ["", lis[0], "" ], [lis[0], "", ""]]
 
@@ -139,13 +144,23 @@ def get_all_name_surname_nick(string: str) -> list:
     return res
 
 
-def get_all_contacts(string: str) -> list:
+def get_all_contacts(string: str, mycroft=None) -> list:
     """Wraps all_name_surname_nick"""
     list_contacts = []
-    lis = get_all_name_surname_nick(string)
+    lis = get_all_name_surname_nick(string, mycroft)
     for item in lis:
         list_contacts += get_contact(name=item[0], surname=item[1], nickname=item[2])
     return list_contacts
+
+
+def remove_stopwords(tokens: list, mycroft) -> list:
+    stopwords_path = mycroft.find_resource("stopwords.voc", "vocab")
+    with open(stopwords_path) as file:
+        stopwords = file.readlines()
+        for idx, word in enumerate(stopwords):
+            stopwords[idx] = word[:-1]
+        file.close()
+    return list(filter(lambda token: token not in stopwords, tokens))
 
 
 def add_reminder(contact: dict, act: str, date: datetime):
