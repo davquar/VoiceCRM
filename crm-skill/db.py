@@ -146,5 +146,5 @@ def add_relationship(id1, id2, rp):
     """Adds a relationship between contact with id1 and contact with id2 and vice versa."""
     contact1 = get_contact_by_id(id1)
     contact2 = get_contact_by_id(id2)
-    contact1["relationships"].add(rp)
-    contact2["relationships"].add(RP_INVERSE[rp])
+    contact1["relationships"].add((id2, rp))
+    contact2["relationships"].add((id1, RP_INVERSE[rp]))

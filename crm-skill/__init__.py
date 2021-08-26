@@ -524,7 +524,10 @@ class VoiceCRM(MycroftSkill):
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("person") if message is not None else None
+        utt_person = message.data.get("person1") if message is not None else None
+        utt_relationship = message.data.get("relationship") if message is not None else None
+        utt_person2 = message.data.get("person2") if message is not None else None
+        found_relationship = "first"
 
         while not done:
             if state == 0:
@@ -578,17 +581,20 @@ class VoiceCRM(MycroftSkill):
                     contact = list_contacts[0]
 
             if state == 1:
-                utt_relationship, action, state = self.wrap_get_response("Which relationship?", state,
-                    allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
-                if action == ACTION_STOP:
-                    self.speak_dialog("finishing")
-                    return
-                if action == ACTION_REPEAT:
-                    continue
+                if utt_relationship is not None and found_relationship is not None:
+                    state += 1
+                else:
+                    utt_relationship, action, state = self.wrap_get_response("Which relationship?", state,
+                        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action == ACTION_REPEAT:
+                        continue
 
                 found_relationship = None
                 for current_rp in RP_INVERSE:
-                    if self.voc_match(utt_relationship, current_rp, exact=True):
+                    if self.voc_match(utt_relationship, current_rp, exact=False):
                         found_relationship = current_rp
                         break
 
@@ -596,15 +602,18 @@ class VoiceCRM(MycroftSkill):
                     state -= 1
 
             if state == 2:
-                utt_person2, action, state = self.wrap_get_response(f"Whose {found_relationship} are they?", state,
-                    allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
-                if action == ACTION_STOP:
-                    self.speak_dialog("finishing")
-                    return
-                if action == ACTION_REPEAT:
-                    continue
-                if utt_person2 is None:
-                    return
+                if utt_person2 is not None:
+                    state += 1
+                else:
+                    utt_person2, action, state = self.wrap_get_response(f"Whose {found_relationship} are they?", state,
+                        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action == ACTION_REPEAT:
+                        continue
+                    if utt_person2 is None:
+                        return
 
                 list_contacts = get_all_contacts(utt_person2)
                 if len(list_contacts) == 0:
