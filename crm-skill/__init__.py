@@ -586,15 +586,17 @@ class VoiceCRM(MycroftSkill):
                 if action == ACTION_REPEAT:
                     continue
 
-                found_rp = None
+                found_relationship = None
                 for current_rp in RP_INVERSE:
                     if self.voc_match(utt_relationship, current_rp, exact=True):
-                        found_rp = current_rp
-                        state += 1
+                        found_relationship = current_rp
                         break
 
+                if found_relationship is None:
+                    state -= 1
+
             if state == 2:
-                utt_person2, action, state = self.wrap_get_response(f"Whose {found_rp} are they?", state,
+                utt_person2, action, state = self.wrap_get_response(f"Whose {found_relationship} are they?", state,
                     allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
                 if action == ACTION_STOP:
                     self.speak_dialog("finishing")
@@ -639,7 +641,7 @@ class VoiceCRM(MycroftSkill):
                     contact2 = list_contacts[0]
 
             if state == 3:
-                add_relationship(contact["contact_id"], contact2["contact_id"], found_rp)
+                add_relationship(contact["id"], contact2["id"], found_relationship)
                 self.speak_dialog("finishing")
                 done = True
 
