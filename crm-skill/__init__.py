@@ -45,7 +45,6 @@ class VoiceCRM(MycroftSkill):
         # if the utterance contains potentially bad data, ask for confirmation
         if reject_stopwords and self.voc_match(utt, "stopwords"):
             if self.ask_yesno("ask-confirmation-good-data", {"utt": utt}) != "yes":
-                self.log.info("said no")
                 return None, ACTION_REPEAT, state
 
         # everything smooth with the utterance; increment the state
@@ -442,7 +441,7 @@ class VoiceCRM(MycroftSkill):
 
                 self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
 
-                list_contacts = get_all_contacts(utt_person)
+                list_contacts = get_all_contacts(utt_person, self)
                 if len(list_contacts) == 0:
                     should_proceed = self.ask_yesno("ask-create-contact")
                     if should_proceed == "yes":
