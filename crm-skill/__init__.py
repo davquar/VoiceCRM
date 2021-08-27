@@ -101,7 +101,7 @@ class VoiceCRM(MycroftSkill):
                 similar_contacts = len(list_contacts)
                 if similar_contacts > 0:
                     # ask for contact disambiguation
-                    self.speak_dialog("similar-contacts", {"number": similar_contacts, "name": utt_name})
+                    self.speak_dialog("similar-contacts-wname", {"number": similar_contacts, "name": utt_name})
 
                     for i, _ in enumerate(list_contacts):
                         flag_nickname = True
@@ -113,28 +113,34 @@ class VoiceCRM(MycroftSkill):
 
                         if flag_nickname and flag_birthdate:
                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {
-                                "name": utt_name,
-                                "surname": utt_surname,
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
                                 "nickname": list_contacts[i]["nickname"],
                                 "birthdate": list_contacts[i]["birth_date"]
                             })
                         elif flag_nickname and not flag_birthdate:
                             identikit = self.ask_yesno("ask-disambiguate-contact", {
-                                "name": utt_name,
-                                "surname": utt_surname,
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
                                 "nickname": list_contacts[i]["nickname"]
                             })
                         elif not flag_nickname and flag_birthdate:
                             identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {
-                                "name": utt_name,
-                                "surname": utt_surname,
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
                                 "birthdate": list_contacts[i]["birth_date"]
                             })
                         else:
-                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {"name": utt_name, "surname": utt_surname})
+                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"]
+                            })
 
                         if identikit == "yes":
-                            self.speak_dialog("error-contact-exists", {"name": utt_name, "surname": utt_surname})
+                            self.speak_dialog("error-contact-exists", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"]
+                            })
                             return
 
                     if self.ask_yesno("ask-sure-another-person", {"name": utt_name, "surname": utt_surname}) == "yes":
@@ -272,7 +278,7 @@ class VoiceCRM(MycroftSkill):
 
                 self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
 
-                list_contacts = get_all_contacts(utt_person)
+                list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
                 if len(list_contacts)<=0:
                     # the contact does not exist --> ask to create
                     should_proceed = self.ask_yesno("ask-create-contact")
@@ -285,7 +291,7 @@ class VoiceCRM(MycroftSkill):
                         return
 
                 elif len(list_contacts)>1:
-                    self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person})
+                    self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person_clean})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         flag_nickname = True
@@ -321,7 +327,6 @@ class VoiceCRM(MycroftSkill):
                             })
 
                         if identikit == "yes":
-                            #self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                             list_contacts[0] = list_contacts[i]
                             flag = 1
                             break
@@ -441,7 +446,7 @@ class VoiceCRM(MycroftSkill):
 
                 self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
 
-                list_contacts = get_all_contacts(utt_person, self)
+                list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
                 if len(list_contacts) == 0:
                     should_proceed = self.ask_yesno("ask-create-contact")
                     if should_proceed == "yes":
@@ -452,7 +457,7 @@ class VoiceCRM(MycroftSkill):
                         self.speak_dialog("finishing")
                         return
                 if len(list_contacts) > 1:
-                    self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person})
+                    self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person_clean})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         flag_nickname = True
@@ -488,7 +493,6 @@ class VoiceCRM(MycroftSkill):
                             })
 
                         if identikit == "yes":
-                            #self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                             contact = list_contacts[i]
                             flag = 1
                             break
@@ -626,7 +630,7 @@ class VoiceCRM(MycroftSkill):
 
                 self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
 
-                list_contacts = get_all_contacts(utt_person)
+                list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
                 if len(list_contacts) <= 0:
                     # the contact does not exist --> ask to create
                     should_proceed = self.ask_yesno("ask-create-contact")
@@ -634,7 +638,7 @@ class VoiceCRM(MycroftSkill):
                         self.handle_new_contact(None)
                     return
                 if len(list_contacts) > 1:
-                    self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person})
+                    self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person_clean})
                     flag = 0
                     for i, _ in enumerate(list_contacts):
                         flag_nickname = True
@@ -670,7 +674,6 @@ class VoiceCRM(MycroftSkill):
                             })
 
                         if identikit == "yes":
-                            #self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                             list_contacts[0] = list_contacts[i]
                             flag = 1
                             break

@@ -89,21 +89,15 @@ def get_contact(name: str, surname: str, nickname: str) -> list:
             (contact["nickname"] == nickname or nickname == ""), contacts))
 
 
-def get_all_name_surname_nick(string: str, mycroft=None) -> list:
+def get_all_name_surname_nick(tokens: list) -> list:
     """Returns (raw) all the contacts which name or surname or nickname (or a combination of them) matches
-    the given string """
-    lis = string.split(" ")
+    the given list of tokens (words from the utterance)"""
+    if len(tokens) == 1:
+        return [["", "", tokens[0]], ["", tokens[0], "" ], [tokens[0], "", ""]]
 
-    # it this is the 1st call, then remove stopwords
-    if mycroft is not None:
-        lis = remove_stopwords(lis, mycroft)
-
-    if len(lis) == 1:
-        return [["", "", lis[0]], ["", lis[0], "" ], [lis[0], "", ""]]
-
-    half = len(lis) // 2
-    part1 = get_all_name_surname_nick(" ".join(lis[:half]))
-    part2 = get_all_name_surname_nick(" ".join(lis[half:]))
+    half = len(tokens) // 2
+    part1 = get_all_name_surname_nick(tokens[:half])
+    part2 = get_all_name_surname_nick(tokens[half:])
     res = []
     for elem1 in part1:
         for elem2 in part2:
@@ -144,13 +138,16 @@ def get_all_name_surname_nick(string: str, mycroft=None) -> list:
     return res
 
 
-def get_all_contacts(string: str, mycroft=None) -> list:
-    """Wraps all_name_surname_nick"""
+def get_all_contacts(string: str, mycroft) -> (list, str):
+    """Wraps all_name_surname_nick.
+    Returns both the list of contacts that match the given search string (utterance),
+    and the "cleaned" utterance without possible stopwords."""
     list_contacts = []
-    lis = get_all_name_surname_nick(string, mycroft)
-    for item in lis:
+    tokens = remove_stopwords(string.split(" "), mycroft)
+    result = get_all_name_surname_nick(tokens)
+    for item in result:
         list_contacts += get_contact(name=item[0], surname=item[1], nickname=item[2])
-    return list_contacts
+    return list_contacts, " ".join(tokens)
 
 
 def remove_stopwords(tokens: list, mycroft) -> list:
