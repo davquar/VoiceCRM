@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
 from lingua_franca.format import nice_date_time, nice_date
 from mycroft_bus_client import MessageBusClient, Message
-from mycroft import MycroftSkill, intent_file_handler
+from mycroft import MycroftSkill, intent_file_handler, intent_handler
 from mycroft.util import parse
+
+from adapt.intent import IntentBuilder
 
 from .constants import *
 from .db import *
@@ -518,22 +520,21 @@ class VoiceCRM(MycroftSkill):
                 self.speak_dialog("finishing")
                 done = True
 
-    @intent_file_handler("add-relationships.intent")
+    @intent_handler(IntentBuilder("NewRelationship")
+        .require("Person1")
+        .require("Person2")
+        .require("RelationshipType")
+        .optionally("RelationshipKeyword")
+    )
     def handle_add_relationships(self, message):
         done = False
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("person1") if message is not None else None
-        utt_relationship = message.data.get("relationship") if message is not None else None
-        utt_person2 = message.data.get("person2") if message is not None else None
+        utt_person = message.data.get("Person1") if message is not None else None
+        utt_relationship = message.data.get("RelationshipType") if message is not None else None
+        utt_person2 = message.data.get("Person2") if message is not None else None
         found_relationship = "first"
-
-        # debug
-        self.log.info(f'message.data: {message.data}')
-        self.log.info(f'utt_person: {utt_person}')
-        self.log.info(f'utt_relationship: {utt_relationship}')
-        self.log.info(f'utt_person2: {utt_person2}')
 
         while not done:
             if state == 0:
