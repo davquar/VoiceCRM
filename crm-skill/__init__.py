@@ -529,6 +529,12 @@ class VoiceCRM(MycroftSkill):
         utt_person2 = message.data.get("person2") if message is not None else None
         found_relationship = "first"
 
+        # debug
+        self.log.info(f'message.data: {message.data}')
+        self.log.info(f'utt_person: {utt_person}')
+        self.log.info(f'utt_relationship: {utt_relationship}')
+        self.log.info(f'utt_person2: {utt_person2}')
+
         while not done:
             if state == 0:
                 if utt_person is not None:

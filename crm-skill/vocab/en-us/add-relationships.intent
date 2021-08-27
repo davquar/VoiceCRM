@@ -2,5 +2,5 @@
 (add|create|set) a (relationship|relation|affair)
 (add|create|set) an (relationship|relation|affair)
 (add|create|set) a new (relationship|relation|affair)
-
 (add|set) that {person1} is {relationship} (of|with) {person2}
+relation (add|set) that {person1} is {relationship}
