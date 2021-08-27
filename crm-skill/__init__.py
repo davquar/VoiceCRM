@@ -2,8 +2,10 @@ import time
 from datetime import datetime, timezone
 from lingua_franca.format import nice_date_time, nice_date
 from mycroft_bus_client import MessageBusClient, Message
-from mycroft import MycroftSkill, intent_file_handler
+from mycroft import MycroftSkill, intent_file_handler, intent_handler
 from mycroft.util import parse
+
+from adapt.intent import IntentBuilder
 
 from .constants import *
 from .db import *
@@ -716,6 +718,197 @@ class VoiceCRM(MycroftSkill):
                         number_of_activities = (cont_step - 2) * 5
                         cont_step -= 2
 
+                self.speak_dialog("finishing")
+                done = True
+
+    @intent_handler(IntentBuilder("NewRelationship")
+        .require("Person1")
+        .require("Person2")
+        .require("RelationshipType")
+        .optionally("RelationshipKeyword")
+    )
+    @intent_file_handler("add-relationship.intent")
+    def handle_add_relationships(self, message):
+        done = False
+        state = 0
+
+        # get entities if the user used a compact phrase
+        utt_person = message.data.get("Person1") if message is not None else None
+        utt_relationship = message.data.get("RelationshipType") if message is not None else None
+        utt_person2 = message.data.get("Person2") if message is not None else None
+        found_relationship = "first"
+
+        while not done:
+            if state == 0:
+                if utt_person is not None:
+                    state += 1
+                else:
+                    utt_person, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
+                        ACTION_STOP, ACTION_REPEAT
+                    })
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action == ACTION_REPEAT:
+                        continue
+
+                    if utt_person is None:
+                        return
+
+                list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
+                if len(list_contacts) == 0:
+                    should_proceed = self.ask_yesno("ask-create-contact")
+                    if should_proceed == "yes":
+                        list_contacts = [self.handle_new_contact(None)]
+                        if list_contacts[0] is None:
+                            return
+                    else:
+                        self.speak_dialog("finishing")
+                        return
+                if len(list_contacts) > 1:
+                    self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person_clean})
+                    flag = 0
+                    for i, _ in enumerate(list_contacts):
+                        flag_nickname = True
+                        flag_birthdate = True
+                        if list_contacts[i]["nickname"] is None or (list_contacts[i]["nickname"]==""):
+                            flag_nickname = False
+                        if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
+                            flag_birthdate = False
+
+                        if flag_nickname and flag_birthdate:
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
+                        elif flag_nickname and not flag_birthdate:
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"]
+                            })
+                        elif not flag_nickname and flag_birthdate:
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
+                        else:
+                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"]
+                            })
+
+                        if identikit == "yes":
+                            contact1 = list_contacts[i]
+                            flag = 1
+                            break
+
+                    if flag == 0:
+                        self.speak_dialog("error-contact-not-found")
+                        return
+                else:
+                    contact1 = list_contacts[0]
+
+            if state == 1:
+                if utt_relationship is not None and found_relationship is not None:
+                    state += 1
+                else:
+                    utt_relationship, action, state = self.wrap_get_response("ask-relationship", state,
+                        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK}, reject_stopwords=True)
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action == ACTION_REPEAT:
+                        continue
+
+                found_relationship = None
+                for current_rp in RP_INVERSE:
+                    if self.voc_match(utt_relationship, current_rp, exact=False):
+                        found_relationship = current_rp
+                        break
+
+                if found_relationship is None:
+                    state -= 1
+
+            if state == 2:
+                if utt_person2 is not None:
+                    state += 1
+                else:
+                    utt_person2, action, state = self.wrap_get_response(f"Whose {found_relationship} is {contact1['name']}", state,
+                        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK}, reject_stopwords=True)
+                    if action == ACTION_STOP:
+                        self.speak_dialog("finishing")
+                        return
+                    if action == ACTION_REPEAT:
+                        continue
+                    if utt_person2 is None:
+                        return
+
+                list_contacts, utt_person2_clean = get_all_contacts(utt_person2, self)
+                if len(list_contacts) == 0:
+                    should_proceed = self.ask_yesno("ask-create-contact")
+                    if should_proceed == "yes":
+                        list_contacts = [self.handle_new_contact(None)]
+                        if list_contacts[0] is None:
+                            return
+                    else:
+                        self.speak_dialog("finishing")
+                        return
+                if len(list_contacts) > 1:
+                    self.speak_dialog("similar-contacts-wname", {
+                        "number": len(list_contacts),
+                        "name": utt_person2_clean
+                    })
+                    flag = 0
+                    for i, _ in enumerate(list_contacts):
+                        flag_nickname = True
+                        flag_birthdate = True
+                        if list_contacts[i]["nickname"] is None or (list_contacts[i]["nickname"]==""):
+                            flag_nickname = False
+                        if list_contacts[i]["birth_date"] is None or (list_contacts[i]["birth_date"]==""):
+                            flag_birthdate = False
+
+                        if flag_nickname and flag_birthdate:
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate-wnick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
+                        elif flag_nickname and not flag_birthdate:
+                            identikit = self.ask_yesno("ask-disambiguate-contact", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "nickname": list_contacts[i]["nickname"]
+                            })
+                        elif not flag_nickname and flag_birthdate:
+                            identikit = self.ask_yesno("ask-disambiguate-contact-wbdate", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"],
+                                "birthdate": list_contacts[i]["birth_date"]
+                            })
+                        else:
+                            identikit = self.ask_yesno("ask-disambiguate-contact-nobir-nonick", {
+                                "name": list_contacts[i]["name"],
+                                "surname": list_contacts[i]["surname"]
+                            })
+
+                        if identikit == "yes":
+                            contact2 = list_contacts[i]
+                            flag = 1
+                            break
+
+                    if flag == 0:
+                        self.speak_dialog("error-contact-not-found")
+                        return
+                else:
+                    contact2 = list_contacts[0]
+
+            if state == 3:
+                add_relationship(contact1["id"], contact2["id"], found_relationship)
                 self.speak_dialog("finishing")
                 done = True
 
