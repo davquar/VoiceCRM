@@ -163,6 +163,9 @@ class VoiceCRM(MycroftSkill):
                 elif action == ACTION_STOP:
                     self.speak_dialog("finishing")
                     return
+                elif action == ACTION_BACK:
+                    utt_name=None
+                    continue
                 else:
                     add_contact(utt_name, utt_surname, "")
                     state += 1
@@ -191,7 +194,7 @@ class VoiceCRM(MycroftSkill):
 
             if state == 5:
                 utt_gender, action, state = self.wrap_get_response("ask-gender", state, allowed_actions={
-                    ACTION_STOP, ACTION_REPEAT, ACTION_SKIP
+                    ACTION_STOP, ACTION_REPEAT, ACTION_SKIP, ACTION_BACK
                 }, dialog_data={"name": utt_name}, reject_stopwords=True)
                 if action is None:
                     if self.voc_match(utt_gender, "genders"):
