@@ -757,7 +757,7 @@ class VoiceCRM(MycroftSkill):
 
                 list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
                 if len(list_contacts) == 0:
-                    should_proceed = self.ask_yesno("ask-create-contact")
+                    should_proceed = self.ask_yesno("ask-create-contact-wname", {"person": utt_person_clean})
                     if should_proceed == "yes":
                         list_contacts = [self.handle_new_contact(None)]
                         if list_contacts[0] is None:
