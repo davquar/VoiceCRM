@@ -1,0 +1,4 @@
+.* (reminder|alarm|notification|alert) (about|related to|regarding) (?P<Person>.*)
+.* (reminder|alarm|notification|alert) (about|related to|regarding) (?P<Person>.*) (for|on) (?P<DateTime>.*)
+.* (remind|notify|alert) .* (about|related to|regarding) (?P<Person>.*)
+.* (remind|notify|alert) .* (about|related to|regarding) (?P<Person>.*) (on|for) (?P<DateTime>.*)

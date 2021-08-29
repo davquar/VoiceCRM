@@ -1,16 +1,5 @@
+new (reminder|notification|alarm|alert)
 (add|create|set) (reminder|notification|alarm|alert)
 (add|create|set) a (reminder|notification|alarm|alert)
 (add|create|set) a new (reminder|notification|alarm|alert)
-(add|create|set) (reminder|notification|alarm|alert) (about|related to|with) {person}
-(add|create|set) a (reminder|notification|alarm|alert) (about|related to|with) {person}
-(add|create|set) a new (reminder|notification|alarm|alert) (about|related to|with) {person}
-add new (reminder|notification|alarm|alert) (about|related to|with) {person} (on|for) {datetime}
-add a new (reminder|notification|alarm|alert) (about|related to|with) {person} (on|for) {datetime}
-add a (reminder|notification|alarm|alert) (about|related to|with) {person} (on|for) {datetime}
-new (reminder|notification|alarm|alert) (about|related to|with) {person} (on|for) {datetime}
-(add|create|set) a (reminder|notification|alarm|alert) (about|related to|with) {person} (on|for) {datetime}
-(add|create|set) new (reminder|notification|alarm|alert) (about|related to|with) {person} (on|for) {datetime}
-(add|create|set) a new (reminder|notification|alarm|alert) (about|related to|with) {person} (on|for) {datetime}
-(add|create|set) a new (reminder|notification|alarm|alert) on {datetime} about {person}
-(remind|notify|alert) me (something|a thing|one thing)
-(remind|notify|alert) me (something|a thing|one thing) (about|related to|with) {person}
+(remind|notify|alert) me (something|a thing|one thing)datetime
