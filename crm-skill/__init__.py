@@ -53,15 +53,13 @@ class VoiceCRM(MycroftSkill):
         return utt, None, state + 1
 
     @intent_file_handler("new-contact.intent")
-    def handle_new_contact(self, message, inner_task) -> dict:
+    def handle_new_contact(self, message, is_inner_task=False) -> dict:
         done = False
         state = 0
 
         # get entities if the user used a compact phrase
         utt_name = message.data.get("name")         if message is not None else None
         utt_surname = message.data.get("surname")   if message is not None else None
-
-        is_inner_task = False         if ((inner_task is None) or (inner_task is not True)) else True      
 
         while not done:
             if state == 0:
@@ -97,8 +95,6 @@ class VoiceCRM(MycroftSkill):
                         return
                 else:
                     state += 1
-
-
 
                 nickname_mandatory = False
                 list_contacts = get_contact(utt_name, utt_surname, "")
@@ -193,10 +189,9 @@ class VoiceCRM(MycroftSkill):
                     continue
                 if is_inner_task:
                     self.speak_dialog("finishing-inner")
-                    return contact
-                else
+                else:
                     self.speak_dialog("finishing")
-                    return contact
+                return contact
 
             if state == 5:
                 utt_gender, action, state = self.wrap_get_response("ask-gender", state, allowed_actions={
@@ -211,10 +206,9 @@ class VoiceCRM(MycroftSkill):
                 elif action == ACTION_STOP:
                     if is_inner_task:
                         self.speak_dialog("finishing-inner")
-                        return contact
-                    else
+                    else:
                         self.speak_dialog("finishing")
-                        return contact
+                    return contact
                 else:
                     continue
 
@@ -249,10 +243,9 @@ class VoiceCRM(MycroftSkill):
                 elif action == ACTION_STOP:
                     if is_inner_task:
                         self.speak_dialog("finishing-inner")
-                        return contact
-                    else
+                    else:
                         self.speak_dialog("finishing")
-                        return contact
+                    return contact
                 else:
                     continue
 
@@ -262,7 +255,7 @@ class VoiceCRM(MycroftSkill):
             if state == 7:
                 if is_inner_task:
                     self.speak_dialog("finishing-inner")
-                else
+                else:
                     self.speak_dialog("finishing")
                 done = True
                 return contact
