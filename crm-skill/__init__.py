@@ -362,7 +362,7 @@ class VoiceCRM(MycroftSkill):
                     if flag == 0:
                         self.speak_dialog("error-contact-not-found")
                         return
-           
+
             if state == 1:
                 utt_activity, action, state = self.wrap_get_response("ask-what-remind", state, allowed_actions={
                     ACTION_STOP, ACTION_BACK, ACTION_REPEAT
@@ -652,7 +652,6 @@ class VoiceCRM(MycroftSkill):
             contact_id = last_action["contact"]
             contact = get_contact_by_id(contact_id)
             if type == "contact":
-
                 should_delete = self.ask_yesno("Your last action is: You added {} {} {} to your contacts list. Do you want delete them?".
                     format(contact['name'],
                            contact['surname'],
@@ -691,6 +690,22 @@ class VoiceCRM(MycroftSkill):
                     self.speak_dialog("I removed the reminder.")
                 else:
                     self.speak_dialog("finishing")
+            if type == "relationship":
+                contact_id2 = last_action["contact2"]
+                contact2 = get_contact_by_id(contact_id2)
+                should_delete = self.ask_yesno("Your last action is: You set the following relationship: {} {} {} is the {} of {} {} {}. Do you want delete it?".
+                    format(contact['name'],
+                           contact['surname'],
+                           contact['nickname'],
+                           last_action['relationship'],
+                           contact2['name'],
+                           contact2['surname'],
+                           contact2['nickname']))
+                if should_delete == "yes":
+                    remove_relationship(contact, contact2)
+                    self.speak_dialog("I removed the relationship.")
+                else:
+                    self.speak_dialog("finishing")
         else:
             self.speak_dialog("The last action cannot be undone")
 
@@ -722,7 +737,7 @@ class VoiceCRM(MycroftSkill):
                     if utt_person is None:
                         return
 
-            
+
 
                 list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
                 if len(list_contacts) == 1:
@@ -733,8 +748,8 @@ class VoiceCRM(MycroftSkill):
                     if should_proceed == "yes":
                         self.handle_new_contact(None, True)
                     return
-                
-                
+
+
                 if len(list_contacts) > 1:
                     self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person_clean})
                     flag = 0
@@ -1016,6 +1031,12 @@ class VoiceCRM(MycroftSkill):
 
             if state == 3:
                 add_relationship(contact1["id"], contact2["id"], found_relationship)
+                last_actions.append({
+                    "type": "relationship",
+                    "contact": contact1["id"],
+                    "contact2": contact2["id"],
+                    "relationship": found_relationship
+                })
                 self.speak_dialog("finishing")
                 done = True
 
