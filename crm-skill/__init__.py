@@ -52,14 +52,19 @@ class VoiceCRM(MycroftSkill):
         # everything smooth with the utterance; increment the state
         return utt, None, state + 1
 
+    @intent_handler(IntentBuilder("NewContact")
+        .require("Name")
+        .require("Surname")
+        .optionally("NewContactKeyword")
+    )
     @intent_file_handler("new-contact.intent")
     def handle_new_contact(self, message, is_inner_task=False) -> dict:
         done = False
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_name = message.data.get("name")         if message is not None else None
-        utt_surname = message.data.get("surname")   if message is not None else None
+        utt_name = message.data.get("Name")         if message is not None else None
+        utt_surname = message.data.get("Surname")   if message is not None else None
 
         while not done:
             if state == 0:
@@ -263,14 +268,19 @@ class VoiceCRM(MycroftSkill):
                 done = True
                 return contact
 
+    @intent_handler(IntentBuilder("NewReminder")
+        .optionally("Person")
+        .optionally("DateTime")
+        .optionally("NewReminderKeyword")
+    )
     @intent_file_handler("add-reminder.intent")
     def handle_new_reminder(self, message):
         done = False
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("person")     if message is not None else None
-        utt_datetime = message.data.get("datetime") if message is not None else None
+        utt_person = message.data.get("Person")     if message is not None else None
+        utt_datetime = message.data.get("DateTime") if message is not None else None
 
         while not done:
             if state == 0:
@@ -292,8 +302,10 @@ class VoiceCRM(MycroftSkill):
                         return
 
                 list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
+
                 if len(list_contacts) == 1:
-                    self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
+                    self.speak_dialog("generic-data-done-repeat", {"data": utt_person_clean})
+
                 if len(list_contacts)<=0:
                     # the contact does not exist --> ask to create
                     should_proceed = self.ask_yesno("ask-create-contact")
@@ -426,27 +438,26 @@ class VoiceCRM(MycroftSkill):
             self.speak_dialog("finishing")
             done = True
 
+
+    @intent_handler(IntentBuilder("NewActivity")
+        .require("Person")
+        .optionally("DateTime")
+        .optionally("Activity")
+        .optionally("NewActivityKeyword")
+    )
     @intent_file_handler("new-activity.intent")
     def handle_new_activity(self, message):
         done = False
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("person")     if message is not None else None
-        utt_datetime = message.data.get("datetime") if message is not None else None
-        utt_activity = message.data.get("activity") if message is not None else None
-
-        # questions can be skipped if all entities exist and are valid
-        skip_questions = False
+        utt_person = message.data.get("Person")     if message is not None else None
+        utt_datetime = message.data.get("DateTime") if message is not None else None
+        utt_activity = message.data.get("Activity") if message is not None else None
 
         while not done:
             if state == 0:
-                if utt_person is not None and utt_datetime is not None and utt_activity is not None:
-                    skip_questions = True
-                    state += 1
-                elif utt_person is not None:
-                    state += 1
-                else:
+                if utt_person is None:
                     utt_person, action, state = self.wrap_get_response("ask-with-whom", state, allowed_actions={
                         ACTION_STOP, ACTION_REPEAT
                     })
@@ -522,7 +533,7 @@ class VoiceCRM(MycroftSkill):
 
 
             if state == 1:
-                if not skip_questions:
+                if utt_activity is None:
                     utt_activity, action, state = self.wrap_get_response("ask-activity", state, allowed_actions={
                         ACTION_STOP, ACTION_REPEAT, ACTION_BACK
                     })
@@ -538,7 +549,7 @@ class VoiceCRM(MycroftSkill):
                     return
 
             if state == 2:
-                if not skip_questions:
+                if utt_datetime is None:
                     utt_datetime, action, state = self.wrap_get_response("ask-activity-when", state, allowed_actions={
                         ACTION_STOP, ACTION_BACK, ACTION_REPEAT
                     })
@@ -567,7 +578,6 @@ class VoiceCRM(MycroftSkill):
                     # no datetime found in the utterance --> repeat
                     self.speak_dialog("error-not-date")
                     state -= 1
-                    skip_questions = False
                     continue
 
                 date = parsed_datetime[0]
@@ -575,7 +585,6 @@ class VoiceCRM(MycroftSkill):
                 if date > datetime.now(tz=timezone.utc):
                     self.speak_dialog("error-datetime-future")
                     state -= 1
-                    skip_questions = False
                     continue
 
                 index = 0
@@ -610,7 +619,7 @@ class VoiceCRM(MycroftSkill):
                 })
                 if should_repeat == "yes":
                     # reset fields, and restart from the questions
-                    done, skip_questions = False, False
+                    done = False
                     utt_person, utt_datetime, utt_activity = None, None, None
                     state = 1
                     continue
@@ -619,13 +628,16 @@ class VoiceCRM(MycroftSkill):
             done = True
 
 
-    @intent_file_handler("last-activities.intent")
+    @intent_handler(IntentBuilder("LastActivities")
+        .optionally("Person")
+        .optionally("LastActivitiesKeyword")
+    )
     def handle_last_activities(self, message):
         done = False
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("person") if message is not None else None
+        utt_person = message.data.get("Person") if message is not None else None
 
         while not done:
             if state == 0:

@@ -1,0 +1,5 @@
+.* activities with (?P<Person>.*)
+.* (?P<Person>.*) .* activities with me
+.* what have I done with (?P<Person>.*)
+.* what I have done with (?P<Person>.*)
+.* what I did with (?P<Person>.*)
