@@ -288,9 +288,7 @@ class VoiceCRM(MycroftSkill):
 
         while not done:
             if state == 0:
-                if utt_person is not None and utt_datetime is not None:
-                    state += 1
-                elif utt_person is not None:
+                if utt_person is not None:
                     state += 1
                 else:
                     utt_person, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
@@ -392,6 +390,8 @@ class VoiceCRM(MycroftSkill):
 
                     if utt_datetime is None:
                         return
+                else:
+                    state += 1
 
                 self.speak_dialog("generic-data-done-repeat", {"data": utt_datetime})
 
@@ -478,7 +478,8 @@ class VoiceCRM(MycroftSkill):
 
                     if utt_person is None:
                         return
-
+                else:
+                    state += 1
 
                 list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
                 if len(list_contacts) == 1:
