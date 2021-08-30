@@ -53,8 +53,8 @@ class VoiceCRM(MycroftSkill):
         return utt, None, state + 1
 
     @intent_handler(IntentBuilder("NewContact")
-        .require("Name")
-        .require("Surname")
+        .optionally("Name")
+        .optionally("Surname")
         .optionally("NewContactKeyword")
     )
     @intent_file_handler("new-contact.intent")
@@ -274,7 +274,6 @@ class VoiceCRM(MycroftSkill):
 
     @intent_handler(IntentBuilder("NewReminder")
         .optionally("Person")
-        .optionally("DateTime")
         .optionally("NewReminderKeyword")
     )
     @intent_file_handler("add-reminder.intent")
@@ -449,9 +448,9 @@ class VoiceCRM(MycroftSkill):
 
 
     @intent_handler(IntentBuilder("NewActivity")
-        .require("Person")
+        .optionally("Person")
         .optionally("DateTime")
-        .optionally("Activity")
+        .optionally("On")
         .optionally("NewActivityKeyword")
     )
     @intent_file_handler("new-activity.intent")
@@ -820,10 +819,13 @@ class VoiceCRM(MycroftSkill):
                 done = True
 
     @intent_handler(IntentBuilder("NewRelationship")
-        .require("Person1")
-        .require("Person2")
-        .require("RelationshipType")
+        .optionally("Person1")
+        .optionally("Person2")
+        .optionally("RelationshipType")
         .optionally("RelationshipKeyword")
+        .optionally("Is")
+        .optionally("A")
+        .optionally("Of")
     )
     @intent_file_handler("add-relationship.intent")
     def handle_add_relationships(self, message):
@@ -841,7 +843,7 @@ class VoiceCRM(MycroftSkill):
                 if utt_person is not None:
                     state += 1
                 else:
-                    utt_person, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
+                    utt_person, action, state = self.wrap_get_response("ask-about-whom-rel", state, allowed_actions={
                         ACTION_STOP, ACTION_REPEAT
                     })
                     if action == ACTION_STOP:
@@ -863,6 +865,8 @@ class VoiceCRM(MycroftSkill):
                     else:
                         self.speak_dialog("finishing")
                         return
+                if len(list_contacts) == 1:
+                    self.speak_dialog("generic-data-done-repeat", {"data": utt_person_clean})
                 if len(list_contacts) > 1:
                     self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person_clean})
                     flag = 0
@@ -915,7 +919,7 @@ class VoiceCRM(MycroftSkill):
                     state += 1
                 else:
                     utt_relationship, action, state = self.wrap_get_response("ask-relationship", state,
-                        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK}, reject_stopwords=True)
+                        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK}, reject_stopwords=False)
                     if action == ACTION_STOP:
                         self.speak_dialog("finishing")
                         return
@@ -930,6 +934,9 @@ class VoiceCRM(MycroftSkill):
 
                 if found_relationship is None:
                     state -= 1
+                    continue
+
+                self.speak_dialog("generic-data-done-repeat", {"data": found_relationship})
 
             if state == 2:
                 if utt_person2 is not None:
@@ -947,7 +954,7 @@ class VoiceCRM(MycroftSkill):
 
                 list_contacts, utt_person2_clean = get_all_contacts(utt_person2, self)
                 if len(list_contacts) == 0:
-                    should_proceed = self.ask_yesno("ask-create-contact")
+                    should_proceed = self.ask_yesno("ask-create-contact-wname", {"person": utt_person2_clean})
                     if should_proceed == "yes":
                         list_contacts = [self.handle_new_contact(None, True)]
                         if list_contacts[0] is None:
@@ -955,6 +962,8 @@ class VoiceCRM(MycroftSkill):
                     else:
                         self.speak_dialog("finishing")
                         return
+                if len(list_contacts) == 1:
+                    self.speak_dialog("generic-data-done-repeat", {"data": utt_person2_clean})
                 if len(list_contacts) > 1:
                     self.speak_dialog("similar-contacts-wname", {
                         "number": len(list_contacts),

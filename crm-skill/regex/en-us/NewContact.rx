@@ -1,2 +1,2 @@
-.* name (?P<Name>.*) surname (?P<Surname>.*)
-.* surname (?P<Surname>.*) name (?P<Name>.*)
+.* (name) (?P<Name>.*) (and surname) (?P<Surname>.*)
+.* (surname) (?P<Surname>.*) (and name) (?P<Name>.*)
