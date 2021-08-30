@@ -1,3 +1,3 @@
-.* (?P<Person1>.*) is (|a) (?P<RelationshipType>.*) of (?P<Person2>.*)
+.* (?P<Person1>.*) is (|a) (?P<RelationshipType>.*) (of|with) (?P<Person2>.*)
 .* (?P<Person1>.*) and (?P<Person2>.*) are (?P<RelationshipType>.*)
 .* (?P<RelationshipType>.*) between (?P<Person1>.*) and (?P<Person2>.*)

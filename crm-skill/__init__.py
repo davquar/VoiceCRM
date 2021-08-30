@@ -53,8 +53,8 @@ class VoiceCRM(MycroftSkill):
         return utt, None, state + 1
 
     @intent_handler(IntentBuilder("NewContact")
-        .require("Name")
-        .require("Surname")
+        .optionally("Name")
+        .optionally("Surname")
         .optionally("NewContactKeyword")
     )
     @intent_file_handler("new-contact.intent")
@@ -274,7 +274,6 @@ class VoiceCRM(MycroftSkill):
 
     @intent_handler(IntentBuilder("NewReminder")
         .optionally("Person")
-        .optionally("DateTime")
         .optionally("NewReminderKeyword")
     )
     @intent_file_handler("add-reminder.intent")
@@ -449,9 +448,9 @@ class VoiceCRM(MycroftSkill):
 
 
     @intent_handler(IntentBuilder("NewActivity")
-        .require("Person")
+        .optionally("Person")
         .optionally("DateTime")
-        .optionally("Activity")
+        .optionally("On")
         .optionally("NewActivityKeyword")
     )
     @intent_file_handler("new-activity.intent")
@@ -820,10 +819,13 @@ class VoiceCRM(MycroftSkill):
                 done = True
 
     @intent_handler(IntentBuilder("NewRelationship")
-        .require("Person1")
-        .require("Person2")
-        .require("RelationshipType")
+        .optionally("Person1")
+        .optionally("Person2")
+        .optionally("RelationshipType")
         .optionally("RelationshipKeyword")
+        .optionally("Is")
+        .optionally("A")
+        .optionally("Of")
     )
     @intent_file_handler("add-relationship.intent")
     def handle_add_relationships(self, message):
@@ -841,7 +843,7 @@ class VoiceCRM(MycroftSkill):
                 if utt_person is not None:
                     state += 1
                 else:
-                    utt_person, action, state = self.wrap_get_response("ask-about-whom", state, allowed_actions={
+                    utt_person, action, state = self.wrap_get_response("ask-about-whom-rel", state, allowed_actions={
                         ACTION_STOP, ACTION_REPEAT
                     })
                     if action == ACTION_STOP:
