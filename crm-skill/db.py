@@ -47,6 +47,24 @@ contacts = [
     }
 ]
 
+last_actions = []
+
+def remove_contact(contact: dict):
+    """Remove the contact from the contacts list"""
+    contacts.remove(contact)
+    last_actions.pop(-1)
+
+def remove_activity(contact: dict, index: int):
+    """Remove the activty from the activities list"""
+    index_contact = contacts.index(contact)
+    contacts[index_contact]['activities'].pop(index)
+    last_actions.pop(-1)
+
+def remove_reminder(contact: dict):
+    """Remove the reminder from the reminders list"""
+    index_contact = contacts.index(contact)
+    contacts[index_contact]['reminders'].pop(-1)
+    last_actions.pop(-1)
 
 def add_contact(name: str, surname: str, nickname=""):
     """Create new contact with the given name and surname"""
@@ -61,7 +79,6 @@ def add_contact(name: str, surname: str, nickname=""):
         "reminders": [],
         "relationships": set()
     })
-
 
 def get_contact_by_id(contact_id: int) -> dict:
     """Returns the (first/only) contact with the given id"""
@@ -166,7 +183,6 @@ def add_reminder(contact: dict, act: str, date: datetime):
         "activity": act,
         "date": date
     })
-
 
 def add_relationship(id1, id2, rp):
     """Adds a relationship between contact with id1 and contact with id2 and vice versa."""

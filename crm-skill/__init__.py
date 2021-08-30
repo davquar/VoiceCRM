@@ -192,6 +192,10 @@ class VoiceCRM(MycroftSkill):
             if state == 4:
                 should_proceed = self.ask_yesno("contact-added-ask-details", {"name": utt_name, "surname": utt_surname})
                 contact = get_contact(utt_name, utt_surname, "")[0]
+                last_actions.append({
+                    "type": "contact",
+                    "contact": contact["id"]
+                })
                 if should_proceed == "yes":
                     state += 1
                     continue
@@ -421,6 +425,11 @@ class VoiceCRM(MycroftSkill):
                 ))
                 add_reminder(list_contacts[0], utt_activity, date)
 
+                last_actions.append({
+                    "type": "reminder",
+                    "contact": list_contacts[0]["id"]
+                })
+
             if state == 3:
                 time.sleep(1) # wait for the external skill to avoid race condition
                 self.enable_intent("add-reminder.intent")
@@ -594,6 +603,7 @@ class VoiceCRM(MycroftSkill):
                         too_short = False
                         break
 
+
                 if too_short:
                     contact["activities"].append({
                         "activity": utt_activity,
@@ -612,6 +622,13 @@ class VoiceCRM(MycroftSkill):
                     "datetime": nice_date_time(date),
                 })
 
+                last_actions.append({
+                    "type": "activity",
+                    "contact": contact["id"],
+                    "activity": utt_activity,
+                    "date": date
+                })
+
             if state == 3:
                 spoken_contact = contact["nickname"] if contact["nickname"] != "" else contact["name"]
                 should_repeat = self.ask_yesno("ask-repeat-task-activity", {
@@ -627,6 +644,55 @@ class VoiceCRM(MycroftSkill):
             self.speak_dialog("finishing")
             done = True
 
+    @intent_file_handler("delete-last-action.intent")
+    def handle_deletion_last_action(self, message):
+        if len(last_actions) > 0:
+            last_action = last_actions[-1]
+            type = last_action["type"]
+            contact_id = last_action["contact"]
+            contact = get_contact_by_id(contact_id)
+            if type == "contact":
+
+                should_delete = self.ask_yesno("Your last action is: You added {} {} {} to your contacts list. Do you want delete them?".
+                    format(contact['name'],
+                           contact['surname'],
+                           contact['nickname']))
+                if should_delete == "yes":
+                    remove_contact(contact)
+                    self.speak_dialog("I removed {} {} {} from your contacts list.".
+                        format(contact['name'],
+                               contact['surname'],
+                               contact['nickname']))
+                else:
+                    self.speak_dialog("finishing")
+            if type == "activity":
+                should_delete = self.ask_yesno("Your last action is: You added the following activity: {} for {} related to {} {} {}. Do you want delete it?".
+                    format(last_action['activity'],
+                           last_action['date'],
+                           contact['name'],
+                           contact['surname'],
+                           contact['nickname']))
+                if should_delete == "yes":
+                    for index, activity in enumerate(contact['activities']):
+                        if (last_action['activity'] == activity['activity'] and last_action['date'] == activity['date']):
+                            remove_activity(contact, index)
+                            self.speak_dialog("I removed the activity.")
+                else:
+                    self.speak_dialog("finishing")
+            if type == "reminder":
+                should_delete = self.ask_yesno("Your last action is: You set the following reminder: {} for {} related to {} {} {}. Do you want delete it?".
+                    format(contact['reminders'][-1]['activity'],
+                           contact['reminders'][-1]['date'],
+                           contact['name'],
+                           contact['surname'],
+                           contact['nickname']))
+                if should_delete == "yes":
+                    remove_reminder(contact)
+                    self.speak_dialog("I removed the reminder.")
+                else:
+                    self.speak_dialog("finishing")
+        else:
+            self.speak_dialog("The last action cannot be undone")
 
     @intent_handler(IntentBuilder("LastActivities")
         .optionally("Person")
