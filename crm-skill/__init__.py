@@ -362,7 +362,7 @@ class VoiceCRM(MycroftSkill):
                     if flag == 0:
                         self.speak_dialog("error-contact-not-found")
                         return
-           
+
             if state == 1:
                 utt_activity, action, state = self.wrap_get_response("ask-what-remind", state, allowed_actions={
                     ACTION_STOP, ACTION_BACK, ACTION_REPEAT
@@ -593,6 +593,7 @@ class VoiceCRM(MycroftSkill):
 
                 if date > datetime.now(tz=timezone.utc):
                     self.speak_dialog("error-datetime-future")
+                    utt_datetime = None
                     state -= 1
                     continue
 
@@ -645,54 +646,66 @@ class VoiceCRM(MycroftSkill):
             done = True
 
     @intent_file_handler("delete-last-action.intent")
-    def handle_deletion_last_action(self, message):
+    def handle_deletion_last_action(self):
         if len(last_actions) > 0:
             last_action = last_actions[-1]
-            type = last_action["type"]
+            action_type = last_action["type"]
             contact_id = last_action["contact"]
             contact = get_contact_by_id(contact_id)
-            if type == "contact":
-
-                should_delete = self.ask_yesno("Your last action is: You added {} {} {} to your contacts list. Do you want delete them?".
-                    format(contact['name'],
-                           contact['surname'],
-                           contact['nickname']))
-                if should_delete == "yes":
+            if action_type == "contact":
+                if self.ask_yesno("delete-last-contact", {
+                    "name": contact["name"],
+                    "surname": contact["surname"],
+                    "nickname": contact["nickname"],
+                }) == "yes":
                     remove_contact(contact)
-                    self.speak_dialog("I removed {} {} {} from your contacts list.".
-                        format(contact['name'],
-                               contact['surname'],
-                               contact['nickname']))
+                    self.speak_dialog("done")
                 else:
                     self.speak_dialog("finishing")
-            if type == "activity":
-                should_delete = self.ask_yesno("Your last action is: You added the following activity: {} for {} related to {} {} {}. Do you want delete it?".
-                    format(last_action['activity'],
-                           last_action['date'],
-                           contact['name'],
-                           contact['surname'],
-                           contact['nickname']))
-                if should_delete == "yes":
-                    for index, activity in enumerate(contact['activities']):
-                        if (last_action['activity'] == activity['activity'] and last_action['date'] == activity['date']):
+            if action_type == "activity":
+                if self.ask_yesno("delete-last-activity", {
+                    "name": contact["name"],
+                    "surname": contact["surname"],
+                    "nickname": contact["nickname"],
+                    "date": nice_date_time(last_action["date"]),
+                    "activity": last_action["activity"],
+                }) == "yes":
+                    for index, activity in enumerate(contact["activities"]):
+                        if (last_action["activity"] == activity["activity"] and last_action["date"] == activity["date"]):
                             remove_activity(contact, index)
-                            self.speak_dialog("I removed the activity.")
+                            self.speak_dialog("done")
                 else:
                     self.speak_dialog("finishing")
-            if type == "reminder":
-                should_delete = self.ask_yesno("Your last action is: You set the following reminder: {} for {} related to {} {} {}. Do you want delete it?".
-                    format(contact['reminders'][-1]['activity'],
-                           contact['reminders'][-1]['date'],
-                           contact['name'],
-                           contact['surname'],
-                           contact['nickname']))
-                if should_delete == "yes":
+            if action_type == "reminder":
+                if self.ask_yesno("delete-last-reminder", {
+                    "date": nice_date_time(contact["reminders"][-1]["date"]),
+                    "name": contact["name"],
+                    "surname": contact["surname"],
+                    "nickname": contact["nickname"],
+                    "activity": contact["reminders"][-1]["activity"],
+                }) == "yes":
                     remove_reminder(contact)
-                    self.speak_dialog("I removed the reminder.")
+                    self.speak_dialog("done")
+                else:
+                    self.speak_dialog("finishing")
+            if action_type == "relationship":
+                contact_id2 = last_action["contact2"]
+                contact2 = get_contact_by_id(contact_id2)
+                if self.ask_yesno("delete-last-relationship", {
+                    "person1_name": contact["name"],
+                    "person1_surname": contact["surname"],
+                    "person1_nickname": contact["nickname"],
+                    "relationship": last_action["relationship"],
+                    "person2_name": contact2["name"],
+                    "person2_surname": contact2["surname"],
+                    "person2_nickname": contact2["nickname"],
+                }) == "yes":
+                    remove_relationship(contact, contact2)
+                    self.speak_dialog("done")
                 else:
                     self.speak_dialog("finishing")
         else:
-            self.speak_dialog("The last action cannot be undone")
+            self.speak_dialog("no-more-actions")
 
     @intent_handler(IntentBuilder("LastActivities")
         .optionally("Person")
@@ -722,7 +735,7 @@ class VoiceCRM(MycroftSkill):
                     if utt_person is None:
                         return
 
-            
+
 
                 list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
                 if len(list_contacts) == 1:
@@ -733,8 +746,8 @@ class VoiceCRM(MycroftSkill):
                     if should_proceed == "yes":
                         self.handle_new_contact(None, True)
                     return
-                
-                
+
+
                 if len(list_contacts) > 1:
                     self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person_clean})
                     flag = 0
@@ -1016,6 +1029,12 @@ class VoiceCRM(MycroftSkill):
 
             if state == 3:
                 add_relationship(contact1["id"], contact2["id"], found_relationship)
+                last_actions.append({
+                    "type": "relationship",
+                    "contact": contact1["id"],
+                    "contact2": contact2["id"],
+                    "relationship": found_relationship
+                })
                 self.speak_dialog("finishing")
                 done = True
 
