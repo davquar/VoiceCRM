@@ -1,17 +1,30 @@
-# <img src="https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/robot.svg" card_color="#22A7F0" width="50" height="50" style="vertical-align:bottom"/> Sample
-Sample skill
+# <img src='voice-recognition-pngrepo-com.png' card_color='#000000' width='50' height='50' style='vertical-align:bottom'/> VoiceCRM
+Organize your contacts - Contact Relationship Manager
 
-## About
+## About 
+VoiceCRM allows you to organize all your contacts through simple voice interactions. Through voice interaction VoiceCRM allows you to add new contacts, to add information on added contacts, to add activities done with your contacts and to add reminders for the future.
 
+## Examples 
+* "Add a new contact"
+* "Create a new person to my contact list"
+* "Create a reminder"
+* "Set a new notification about Michael Jordan"
+* "Register a new activity with Elon Musk"
+* "Create a new relationship"
 
-## Examples
-* 
-
-## Credits
-
+## Credits 
+@fortym2
+@gerlock93
+@pietroliberati98
+@EatingLupini
+@fedecerno
+Mycroft AI (@mycroftai)
 
 ## Category
-**Productivity**
+**Vocal Assistant**
 
 ## Tags
-
+#personalassistant
+#hci
+#vocalassistant
+#crm
