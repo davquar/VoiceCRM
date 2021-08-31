@@ -1,4 +1,4 @@
-# VoiceCRM
+# <img src='docs/home-assistant.png' card_color='#000000' width='50' height='50' style='vertical-align:bottom'/> VoiceCRM
 Organize your contacts - Contact Relationship Manager
 
 ## About 
