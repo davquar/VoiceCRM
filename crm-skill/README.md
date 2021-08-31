@@ -6,8 +6,11 @@ VoiceCRM allows you to organize all your contacts through simple voice interacti
 
 ## Examples 
 * "Add a new contact"
+* "Create a new person to my contact list"
 * "Create a reminder"
-* "Register a new activity"
+* "Set a new notification about Michael Jordan"
+* "Register a new activity with Elon Musk"
+* "Create a new relationship"
 
 ## Credits 
 @fortym2
