@@ -45,6 +45,11 @@ class VoiceCRM(MycroftSkill):
 
         # default: no action words; regular data
         # if the utterance contains potentially bad data, ask for confirmation
+
+        if reject_stopwords:
+            utt = utt.replace("the name is", "").replace("the surname is", "").replace("it is", "").replace("the nickname is", "") \
+                .replace("her name is", "").replace("his name is", "")
+
         if reject_stopwords and self.voc_match(utt, "stopwords"):
             if self.ask_yesno("ask-confirmation-good-data", {"utt": utt}) != "yes":
                 return None, ACTION_REPEAT, state
@@ -956,7 +961,7 @@ class VoiceCRM(MycroftSkill):
                     state += 1
                 else:
                     utt_person2, action, state = self.wrap_get_response(f"Whose {found_relationship} is {contact1['name']}", state,
-                        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK}, reject_stopwords=True)
+                        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
                     if action == ACTION_STOP:
                         self.speak_dialog("finishing")
                         return
