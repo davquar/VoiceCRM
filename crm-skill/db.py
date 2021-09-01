@@ -180,9 +180,12 @@ def get_all_name_surname_nick(tokens: list) -> list:
 def get_all_contacts(string: str, mycroft) -> (list, str):
     """Wraps all_name_surname_nick.
     Returns both the list of contacts that match the given search string (utterance),
-    and the "cleaned" utterance without possible stopwords."""
+    and the "cleaned" utterance without possible stopwords.
+    If the cleaned utterance is empty, return it as is."""
     list_contacts = []
     tokens = remove_stopwords(string.split(" "), mycroft)
+    if len(tokens) == 0:
+        return list_contacts, string
     result = get_all_name_surname_nick(tokens)
     for item in result:
         list_contacts += get_contact(name=item[0], surname=item[1], nickname=item[2])

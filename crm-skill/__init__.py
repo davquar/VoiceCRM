@@ -314,7 +314,7 @@ class VoiceCRM(MycroftSkill):
 
                 if len(list_contacts)<=0:
                     # the contact does not exist --> ask to create
-                    should_proceed = self.ask_yesno("ask-create-contact")
+                    should_proceed = self.ask_yesno("ask-create-contact-wname", {"person": utt_person_clean})
                     if should_proceed == "yes":
                         list_contacts = [self.handle_new_contact(None, True)]
                         if list_contacts[0] is None:
@@ -489,7 +489,7 @@ class VoiceCRM(MycroftSkill):
                 if len(list_contacts) == 1:
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                 if len(list_contacts) == 0:
-                    should_proceed = self.ask_yesno("ask-create-contact")
+                    should_proceed = self.ask_yesno("ask-create-contact-wname", {"person": utt_person_clean})
                     if should_proceed == "yes":
                         list_contacts = [self.handle_new_contact(None, True)]
                         if list_contacts[0] is None:
@@ -720,6 +720,8 @@ class VoiceCRM(MycroftSkill):
         done = False
         state = 0
 
+        self.log.info(message.data)
+
         # get entities if the user used a compact phrase
         utt_person = message.data.get("Person") if message is not None else None
 
@@ -747,7 +749,7 @@ class VoiceCRM(MycroftSkill):
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_person})
                 if len(list_contacts) <= 0:
                     # the contact does not exist --> ask to create
-                    should_proceed = self.ask_yesno("ask-create-contact")
+                    should_proceed = self.ask_yesno("ask-create-contact-wname", {"person": utt_person_clean})
                     if should_proceed == "yes":
                         self.handle_new_contact(None, True)
                     return
