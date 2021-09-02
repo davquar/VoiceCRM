@@ -715,6 +715,7 @@ class VoiceCRM(MycroftSkill):
     @intent_handler(IntentBuilder("LastActivities")
         .optionally("Person")
         .optionally("LastActivitiesKeyword")
+	.optionally("Related")
     )
     def handle_last_activities(self, message):
         done = False
