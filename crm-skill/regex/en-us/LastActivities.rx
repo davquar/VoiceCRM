@@ -1,5 +1,6 @@
-.* activities with (?P<Person>.*)
-.* (?P<Person>.*) .* activities with me
-.* what have I done with (?P<Person>.*)
-.* what I have done with (?P<Person>.*)
-.* what I did with (?P<Person>.*)
+.* (activities|activity) (|done) (with|about|related to) (?P<Person>.*)
+.* (?P<Person>.*) .* (activities|activity) with me
+.* have I done with (?P<Person>.*)
+.* I have done with (?P<Person>.*)
+.* I did with (?P<Person>.*)
+
