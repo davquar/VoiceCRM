@@ -26,7 +26,8 @@ contacts = [
             {"activity": "bar", "date": datetime(2021, 4, 5, 21, 0, tzinfo=timezone.utc)},
             {"activity": "nada","date": datetime(2021, 4, 1, tzinfo=timezone.utc)}
         ],
-        "reminders": []
+        "reminders": [],
+        "relationships": set()
     },
     {
         "id": 1,

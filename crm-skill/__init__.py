@@ -9,6 +9,7 @@ from adapt.intent import IntentBuilder
 
 from .constants import *
 from .db import *
+from .util import *
 
 
 class VoiceCRM(MycroftSkill):
@@ -60,7 +61,7 @@ class VoiceCRM(MycroftSkill):
     @intent_handler(IntentBuilder("NewContact")
         .optionally("Name")
         .optionally("Surname")
-        .optionally("NewContactKeyword")
+        .require("NewContactKeyword")
     )
     @intent_file_handler("new-contact.intent")
     def handle_new_contact(self, message, is_inner_task=False) -> dict:
@@ -68,8 +69,9 @@ class VoiceCRM(MycroftSkill):
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_name = message.data.get("Name")         if message is not None else None
-        utt_surname = message.data.get("Surname")   if message is not None else None
+        match_dict = parse_regex(self, "NewContact", message.data.get("utterance"))
+        utt_name = match_dict.get("Name")         if match_dict is not None else None
+        utt_surname = match_dict.get("Surname")   if match_dict is not None else None
 
         while not done:
             if state == 0:
@@ -279,16 +281,16 @@ class VoiceCRM(MycroftSkill):
 
     @intent_handler(IntentBuilder("NewReminder")
         .optionally("Person")
-        .optionally("NewReminderKeyword")
+        .require("NewReminderKeyword")
     )
-    @intent_file_handler("add-reminder.intent")
     def handle_new_reminder(self, message):
         done = False
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("Person")     if message is not None else None
-        utt_datetime = message.data.get("DateTime") if message is not None else None
+        match_dict = parse_regex(self, "AddReminder", message.data.get("utterance"))
+        utt_person = match_dict.get("Person")     if match_dict is not None else None
+        utt_datetime = match_dict.get("DateTime") if match_dict is not None else None
 
         while not done:
             if state == 0:
@@ -420,7 +422,7 @@ class VoiceCRM(MycroftSkill):
                     state -= 1
                     continue
 
-                self.disable_intent("add-reminder.intent")
+                self.disable_intent("NewReminder")
 
                 # call the reminder-skill to activate the reminder in mycroft
                 self.bus.emit(Message("recognizer_loop:utterance", {"utterances":
@@ -436,7 +438,7 @@ class VoiceCRM(MycroftSkill):
 
             if state == 3:
                 time.sleep(1) # wait for the external skill to avoid race condition
-                self.enable_intent("add-reminder.intent")
+                self.enable_intent("NewReminder")
                 spoken_contact = list_contacts[0]["nickname"] if list_contacts[0]["nickname"] != "" else list_contacts[0]["name"]
                 should_repeat = self.ask_yesno("ask-repeat-task-reminder", {
                     "person": spoken_contact,
@@ -453,20 +455,17 @@ class VoiceCRM(MycroftSkill):
 
 
     @intent_handler(IntentBuilder("NewActivity")
-        .optionally("Person")
-        .optionally("DateTime")
-        .optionally("On")
-        .optionally("NewActivityKeyword")
+        .require("NewActivityKeyword")
     )
-    @intent_file_handler("new-activity.intent")
     def handle_new_activity(self, message):
         done = False
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("Person")     if message is not None else None
-        utt_datetime = message.data.get("DateTime") if message is not None else None
-        utt_activity = message.data.get("Activity") if message is not None else None
+        match_dict = parse_regex(self, "NewActivity", message.data.get("utterance"))
+        utt_person = match_dict.get("Person")     if match_dict is not None else None
+        utt_datetime = match_dict.get("DateTime") if match_dict is not None else None
+        utt_activity = match_dict.get("Activity") if match_dict is not None else None
 
         while not done:
             if state == 0:
@@ -713,18 +712,15 @@ class VoiceCRM(MycroftSkill):
             self.speak_dialog("no-more-actions")
 
     @intent_handler(IntentBuilder("LastActivities")
-        .optionally("Person")
         .optionally("LastActivitiesKeyword")
-		.optionally("Related")
     )
     def handle_last_activities(self, message):
         done = False
         state = 0
 
-        self.log.info(message.data)
-
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("Person") if message is not None else None
+        match_dict = parse_regex(self, "LastActivities", message.data.get("utterance"))
+        utt_person = match_dict.get("Person") if match_dict is not None else None
 
         while not done:
             if state == 0:
@@ -843,10 +839,10 @@ class VoiceCRM(MycroftSkill):
         .optionally("Person1")
         .optionally("Person2")
         .optionally("RelationshipType")
-        .optionally("RelationshipKeyword")
         .optionally("Is")
         .optionally("A")
         .optionally("Of")
+        .optionally("RelationshipKeyword")
     )
     @intent_file_handler("add-relationship.intent")
     def handle_add_relationships(self, message):
@@ -854,9 +850,10 @@ class VoiceCRM(MycroftSkill):
         state = 0
 
         # get entities if the user used a compact phrase
-        utt_person = message.data.get("Person1") if message is not None else None
-        utt_relationship = message.data.get("RelationshipType") if message is not None else None
-        utt_person2 = message.data.get("Person2") if message is not None else None
+        match_dict = parse_regex(self, "NewRelationship", message.data.get("utterance"))
+        utt_person = match_dict.get("Person1")                if match_dict is not None else None
+        utt_relationship = match_dict.get("RelationshipType") if match_dict is not None else None
+        utt_person2 = match_dict.get("Person2")               if match_dict is not None else None
         found_relationship = "first"
 
         while not done:

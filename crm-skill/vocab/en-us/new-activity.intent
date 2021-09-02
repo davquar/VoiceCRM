@@ -1,2 +1,3 @@
 (|add|create|register|another|record) (|a) new activity
 (add|create|register|another|record) (|a|an) (|new) activity
+(add|create|register|another|record) (|a|an) (|new) activity {DateTime} with {Person}
