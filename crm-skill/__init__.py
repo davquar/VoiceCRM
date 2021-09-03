@@ -410,6 +410,7 @@ class VoiceCRM(MycroftSkill):
                     parsed_datetime = None
                 if parsed_datetime is None:
                     # no datetime found in the utterance --> repeat
+                    utt_datetime = None
                     self.speak_dialog("error-not-date")
                     state -= 1
                     continue
@@ -580,6 +581,8 @@ class VoiceCRM(MycroftSkill):
                 else:
                     state += 1
 
+                utt_datetime = pastify_year(self, utt_datetime)
+                utt_datetime = pastify_weekday(self, utt_datetime)
                 try:
                     parsed_datetime = parse.extract_datetime(utt_datetime)
                 except Exception:
@@ -589,6 +592,7 @@ class VoiceCRM(MycroftSkill):
                     parsed_datetime = None
                 if parsed_datetime is None:
                     # no datetime found in the utterance --> repeat
+                    utt_datetime = None
                     self.speak_dialog("error-not-date")
                     state -= 1
                     continue
@@ -624,7 +628,7 @@ class VoiceCRM(MycroftSkill):
                     "activity": utt_activity,
                     "name": contact["name"],
                     "surname": contact["surname"],
-                    "datetime": nice_date_time(date),
+                    "datetime": nice_date(date) if date.hour == 0 and date.minute == 0 else nice_date_time(date),
                 })
 
                 last_actions.append({
