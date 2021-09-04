@@ -82,7 +82,7 @@ class VoiceCRM(MycroftSkill):
                     if action == ACTION_REPEAT:
                         continue
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
 
                     if utt_surname is None:
@@ -100,7 +100,7 @@ class VoiceCRM(MycroftSkill):
                     if action in (ACTION_REPEAT, ACTION_BACK):
                         continue
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
 
                     if utt_name is None:
@@ -158,7 +158,7 @@ class VoiceCRM(MycroftSkill):
                     if self.ask_yesno("ask-sure-another-person", {"name": utt_name, "surname": utt_surname}) == "yes":
                         nickname_mandatory = True
                         continue
-                    self.speak_dialog("finishing")
+                    self.speak_dialog("stopped")
                     return
 
                 else:
@@ -174,7 +174,7 @@ class VoiceCRM(MycroftSkill):
                 if action is None:
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_nickname})
                 elif action == ACTION_STOP:
-                    self.speak_dialog("finishing")
+                    self.speak_dialog("stopped")
                     return
                 elif action == ACTION_BACK:
                     utt_name=None
@@ -303,7 +303,7 @@ class VoiceCRM(MycroftSkill):
                         ACTION_REPEAT, ACTION_STOP
                     })
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                     if action == ACTION_REPEAT:
                         continue
@@ -324,7 +324,7 @@ class VoiceCRM(MycroftSkill):
                         if list_contacts[0] is None:
                             return
                     else:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
 
                 elif len(list_contacts)>1:
@@ -377,7 +377,7 @@ class VoiceCRM(MycroftSkill):
                     ACTION_STOP, ACTION_BACK, ACTION_REPEAT
                 })
                 if action == ACTION_STOP:
-                    self.speak_dialog("finishing")
+                    self.speak_dialog("stopped")
                     return
                 if action in (ACTION_REPEAT, ACTION_BACK):
                     continue
@@ -391,7 +391,7 @@ class VoiceCRM(MycroftSkill):
                         ACTION_STOP, ACTION_BACK, ACTION_REPEAT
                     })
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                     if action in (ACTION_REPEAT, ACTION_BACK):
                         continue
@@ -477,7 +477,7 @@ class VoiceCRM(MycroftSkill):
                         ACTION_STOP, ACTION_REPEAT
                     })
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                     if action == ACTION_REPEAT:
                         continue
@@ -497,7 +497,7 @@ class VoiceCRM(MycroftSkill):
                         if list_contacts[0] is None:
                             return
                     else:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                 if len(list_contacts) > 1:
                     self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person_clean})
@@ -554,7 +554,7 @@ class VoiceCRM(MycroftSkill):
                         ACTION_STOP, ACTION_REPEAT, ACTION_BACK
                     })
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                     if action in (ACTION_BACK, ACTION_REPEAT):
                         continue
@@ -570,7 +570,7 @@ class VoiceCRM(MycroftSkill):
                         ACTION_STOP, ACTION_BACK, ACTION_REPEAT
                     })
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                     if action in (ACTION_BACK, ACTION_REPEAT):
                         continue
@@ -737,15 +737,13 @@ class VoiceCRM(MycroftSkill):
                         ACTION_STOP, ACTION_REPEAT
                     })
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                     if action == ACTION_REPEAT:
                         continue
 
                     if utt_person is None:
                         return
-
-
 
                 list_contacts, utt_person_clean = get_all_contacts(utt_person, self)
                 if len(list_contacts) == 1:
@@ -756,7 +754,6 @@ class VoiceCRM(MycroftSkill):
                     if should_proceed == "yes":
                         self.handle_new_contact(None, True)
                     return
-
 
                 if len(list_contacts) > 1:
                     self.speak_dialog("similar-contacts-wname", {"number": len(list_contacts), "name": utt_person_clean})
@@ -871,7 +868,7 @@ class VoiceCRM(MycroftSkill):
                         ACTION_STOP, ACTION_REPEAT
                     })
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                     if action == ACTION_REPEAT:
                         continue
@@ -887,7 +884,7 @@ class VoiceCRM(MycroftSkill):
                         if list_contacts[0] is None:
                             return
                     else:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                 if len(list_contacts) == 1:
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_person_clean})
@@ -945,7 +942,7 @@ class VoiceCRM(MycroftSkill):
                     utt_relationship, action, state = self.wrap_get_response("ask-relationship", state,
                         allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK}, reject_stopwords=False)
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                     if action == ACTION_REPEAT:
                         continue
@@ -971,7 +968,7 @@ class VoiceCRM(MycroftSkill):
                         "person": contact1["name"]
                     }, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
                     if action == ACTION_STOP:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                     if action == ACTION_REPEAT:
                         continue
@@ -986,7 +983,7 @@ class VoiceCRM(MycroftSkill):
                         if list_contacts[0] is None:
                             return
                     else:
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
                 if len(list_contacts) == 1:
                     self.speak_dialog("generic-data-done-repeat", {"data": utt_person2_clean})
@@ -1055,7 +1052,7 @@ class VoiceCRM(MycroftSkill):
                         "old_relationship": existing_relationship,
                         "new_relationship": found_relationship
                     }) != "yes":
-                        self.speak_dialog("finishing")
+                        self.speak_dialog("stopped")
                         return
 
                 add_relationship(contact1["id"], contact2["id"], found_relationship)
