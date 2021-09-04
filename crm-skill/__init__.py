@@ -69,9 +69,9 @@ class VoiceCRM(MycroftSkill):
         state = 0
 
         # get entities if the user used a compact phrase
-        match_dict = parse_regex(self, "NewContact", message.data.get("utterance"))
-        utt_name = match_dict.get("Name")         if match_dict is not None else None
-        utt_surname = match_dict.get("Surname")   if match_dict is not None else None
+        match_dict = parse_regex(self, "NewContact", message.data.get("utterance")) if message is not None else None
+        utt_name = match_dict.get("Name")                                           if match_dict is not None else None
+        utt_surname = match_dict.get("Surname")                                     if match_dict is not None else None
 
         while not done:
             if state == 0:
