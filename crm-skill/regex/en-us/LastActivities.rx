@@ -1,7 +1,7 @@
 .* (activities|activity)( done)? (with|about|related|related with|related to|regarding) (?P<Person>.*)
 .* (?P<Person>.*) .* (activities|activity) with me
-.* have I done with (?P<Person>.*)
-.* I have done with (?P<Person>.*)
-.* I did with (?P<Person>.*)
-.* did I do with (?P<Person>.*)
+.* have i done with (?P<Person>.*)
+.* i have done with (?P<Person>.*)
+.* i did with (?P<Person>.*)
+.* did i do with (?P<Person>.*)
 .* did we do with (?P<Person>.*)

@@ -217,6 +217,8 @@ class VoiceCRM(MycroftSkill):
                     ACTION_STOP, ACTION_REPEAT, ACTION_SKIP, ACTION_BACK
                 }, dialog_data={"name": utt_name}, reject_stopwords=True)
                 if action is None:
+                    if self.voc_match(utt_gender, "genders-male-wrong"):
+                        utt_gender = "male"
                     if self.voc_match(utt_gender, "genders"):
                         contact["gender"] = utt_gender
                         self.speak_dialog("generic-data-done-repeat", {"data": utt_gender})
@@ -964,8 +966,10 @@ class VoiceCRM(MycroftSkill):
                 if utt_person2 is not None:
                     state += 1
                 else:
-                    utt_person2, action, state = self.wrap_get_response(f"Whose {found_relationship} is {contact1['name']}", state,
-                        allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
+                    utt_person2, action, state = self.wrap_get_response("ask-relationship-direction", state, dialog_data={
+                        "relationship": RP_INVERSE[found_relationship],
+                        "person": contact1["name"]
+                    }, allowed_actions={ACTION_STOP, ACTION_REPEAT, ACTION_BACK})
                     if action == ACTION_STOP:
                         self.speak_dialog("finishing")
                         return

@@ -1,1 +1,2 @@
 .* (?P<Activity>.*) (with|about|related|related with|related to|regarding|of) (?P<Person>.*)
+.* (with|about|related|related with|related to|regarding|of) (?P<Person>.*)

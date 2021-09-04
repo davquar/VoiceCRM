@@ -1,2 +1,1 @@
-(|new|add|create) (contact|person)
-(add|create) (a|the) (contact|person)
+(|new|add|create) (|a) (|new) (contact|person|name|contactor)
