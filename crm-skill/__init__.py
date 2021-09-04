@@ -1040,7 +1040,24 @@ class VoiceCRM(MycroftSkill):
                 else:
                     contact2 = list_contacts[0]
 
+                if contact1 == contact2:
+                    self.speak_dialog("err-same-person")
+                    utt_person2 = None
+                    state -= 1
+                    continue
+
             if state == 3:
+                existing_relationship = can_add_relationship(contact1["id"], contact2["id"], found_relationship)
+                if existing_relationship is not None and existing_relationship != found_relationship:
+                    if self.ask_yesno("ask-confirm-replace-relationship", {
+                        "person1": f"{contact1['name']} {contact1['surname']}",
+                        "person2": f"{contact2['name']} {contact2['surname']}",
+                        "old_relationship": existing_relationship,
+                        "new_relationship": found_relationship
+                    }) != "yes":
+                        self.speak_dialog("finishing")
+                        return
+
                 add_relationship(contact1["id"], contact2["id"], found_relationship)
                 last_actions.append({
                     "type": "relationship",

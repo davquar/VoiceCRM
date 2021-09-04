@@ -210,9 +210,31 @@ def add_reminder(contact: dict, act: str, date: datetime):
         "date": date
     })
 
-def add_relationship(id1, id2, rp):
+
+def add_relationship(id1: str, id2: str, rp: str):
     """Adds a relationship between contact with id1 and contact with id2 and vice versa."""
     contact1 = get_contact_by_id(id1)
     contact2 = get_contact_by_id(id2)
     contact1["relationships"].add((id2, rp))
     contact2["relationships"].add((id1, RP_INVERSE[rp]))
+
+
+def can_add_relationship(id1: str, id2: str, rp: str) -> str:
+    """Gets wether this relationship can be added, by returning the possible old relationship if exists.
+    The only case that we ban is the addition of another family relationship
+    to a contact for which an existing family relationship exists, with the same person.
+    For example, A and B cannot be both siblings and cousins"""
+    if rp not in RP_INCOMPATIBLES:
+        return None
+
+    contact1 = get_contact_by_id(id1)
+    contact2 = get_contact_by_id(id2)
+
+    for relationship in contact1["relationships"]:
+        if relationship[0] == id2 and relationship[1] in RP_INCOMPATIBLES:
+            return relationship[1]
+    for relationship in contact2["relationships"]:
+        if relationship[0] == id1 and relationship[1] in RP_INCOMPATIBLES:
+            return relationship[1]
+
+    return None
