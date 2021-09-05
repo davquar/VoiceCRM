@@ -710,7 +710,7 @@ class VoiceCRM(MycroftSkill):
                     "person2_surname": contact2["surname"],
                     "person2_nickname": contact2["nickname"],
                 }) == "yes":
-                    remove_relationship(contact, contact2, True)
+                    remove_relationship(contact, contact2, last_action["relationship"], True)
                     self.speak_dialog("done")
                 else:
                     self.speak_dialog("finishing")
@@ -1055,7 +1055,7 @@ class VoiceCRM(MycroftSkill):
                         self.speak_dialog("stopped")
                         return
 
-                remove_relationship(contact1, contact2, False)
+                remove_relationship(contact1, contact2, found_relationship, False)
                 add_relationship(contact1["id"], contact2["id"], found_relationship)
                 last_actions.append({
                     "type": "relationship",
