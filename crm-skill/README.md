@@ -2,26 +2,28 @@
 Organize your contacts - Contact Relationship Manager
 
 ## About 
-VoiceCRM allows you to organize all your contacts through simple voice interactions. Through voice interaction VoiceCRM allows you to add new contacts, to add information on added contacts, to add activities done with your contacts and to add reminders for the future.
+This skill allows you to organize all your contacts through simple voice interactions. You can add new contacts, activities, reminders and relationships.
 
 ## Examples 
 * "Add a new contact"
-* "Create a new person to my contact list"
-* "Create a reminder"
-* "Set a new notification about Michael Jordan"
+* "Create a new contact name George surname Washington"
+* "Add a new person to my contact list"
+* "Add a new activity"
 * "Register a new activity with Elon Musk"
+* "Create a reminder"
+* "Set a new notification related to Elon Musk"
 * "Create a new relationship"
+* "Set that Elon and Michael are friends"
 
-## Credits 
+## Credits
 @fortym2
 @gerlock93
 @pietroliberati98
 @EatingLupini
 @fedecerno
-Mycroft AI (@mycroftai)
 
 ## Category
-**Vocal Assistant**
+**Daily**
 
 ## Tags
 #personalassistant
