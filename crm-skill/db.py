@@ -75,19 +75,20 @@ def remove_reminder(contact: dict):
     contacts[index_contact]['reminders'].pop(-1)
     last_actions.pop(-1)
 
-def remove_relationship(contact: dict, contact2: dict):
+def remove_relationship(contact: dict, contact2: dict, found_relationship: str, last_act: bool):
     """Remove the relationship from the relationships lists of contact and contact2"""
     index_contact = contacts.index(contact)
     for relationship in contacts[index_contact]['relationships']:
-        if contact2['id'] == relationship[0]:
+        if contact2['id'] == relationship[0] and found_relationship == relationship[1]:
             contacts[index_contact]['relationships'].remove(relationship)
             break
     index_contact2 = contacts.index(contact2)
     for relationship in contacts[index_contact2]['relationships']:
-        if contact['id'] == relationship[0]:
+        if contact['id'] == relationship[0] and RP_INVERSE[found_relationship] == relationship[1]:
             contacts[index_contact2]['relationships'].remove(relationship)
             break
-    last_actions.pop(-1)
+    if last_act:
+        last_actions.pop(-1)
 
 def add_contact(name: str, surname: str, nickname=""):
     """Create new contact with the given name and surname"""
