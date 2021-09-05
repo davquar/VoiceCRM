@@ -75,7 +75,7 @@ def remove_reminder(contact: dict):
     contacts[index_contact]['reminders'].pop(-1)
     last_actions.pop(-1)
 
-def remove_relationship(contact: dict, contact2: dict):
+def remove_relationship(contact: dict, contact2: dict, last_act: bool):
     """Remove the relationship from the relationships lists of contact and contact2"""
     index_contact = contacts.index(contact)
     for relationship in contacts[index_contact]['relationships']:
@@ -87,7 +87,8 @@ def remove_relationship(contact: dict, contact2: dict):
         if contact['id'] == relationship[0]:
             contacts[index_contact2]['relationships'].remove(relationship)
             break
-    last_actions.pop(-1)
+    if last_act:
+        last_actions.pop(-1)
 
 def add_contact(name: str, surname: str, nickname=""):
     """Create new contact with the given name and surname"""
