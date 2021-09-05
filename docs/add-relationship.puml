@@ -81,6 +81,21 @@ alt utt does not contain contact names
 end
 
 == State 3 ==
+alt contact1 == contact2
+    m --> u: same contact
+    m -> m: go to state 2
+end
+
+alt already exists a family relationship\nbetween the two contacts
+    m --> u: {old_relationship} already exists\nreplace it with {relationship}?
+    u -> m: utt (y/n)
+    alt negation
+        m --x u: bye
+    else
+        m -> m: delete {old_relationship}
+    end
+
+end
 
 m -> m: add the specified relationship\nbetween the given contacts
 m --> u: bye
