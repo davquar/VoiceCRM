@@ -36,12 +36,12 @@ class VoiceCRM(MycroftSkill):
                 # if no exact match, check if the utterance contains an action word
                 if self.voc_match(utt, action, exact=False):
                     if action == ACTION_BACK and self.ask_yesno("ask-confirmation-back") == "yes":
-                        state = state - 1
-                    elif action == ACTION_SKIP and self.ask_yesno("ask-confirmation-skip") == "yes":
-                        state = state + 1
-                    elif action == ACTION_STOP and self.ask_yesno("ask-confirmation-stop") == "yes":
+                        return utt, action, state - 1
+                    if action == ACTION_SKIP and self.ask_yesno("ask-confirmation-skip") == "yes":
+                        return utt, action,  state + 1
+                    if action == ACTION_STOP and self.ask_yesno("ask-confirmation-stop") == "yes":
                         return utt, action, state
-                    elif action == ACTION_REPEAT and self.ask_yesno("ask-confirmation-repeat") == "yes":
+                    if action == ACTION_REPEAT and self.ask_yesno("ask-confirmation-repeat") == "yes":
                         return utt, action, state
 
         # default: no action words; regular data
@@ -49,7 +49,8 @@ class VoiceCRM(MycroftSkill):
 
         if reject_stopwords:
             utt = utt.replace("the name is", "").replace("the surname is", "").replace("it is", "").replace("the nickname is", "") \
-                .replace("her name is", "").replace("his name is", "")
+                .replace("her name is", "").replace("his name is", "").replace("at ", "").replace("to ", "").replace("it ", "").replace("is ", "") \
+                .replace("a ", "").replace("the ", "").replace("mr. ", "").replace("mrs. ", "").replace("ms.", "")
 
         if reject_stopwords and self.voc_match(utt, "stopwords"):
             if self.ask_yesno("ask-confirmation-good-data", {"utt": utt}) != "yes":
