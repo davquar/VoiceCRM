@@ -6,11 +6,11 @@ contacts = [
         "id": 0,
         "name": "michael",
         "surname": "jordan",
-        "nickname": "air",
+        "nickname": "jordie",
         "birth_date": "",
         "activities": [
             {"activity": "bar", "date": datetime(2021, 4, 5, 21, 0, tzinfo=timezone.utc)},
-            {"activity": "nada", "date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
+            {"activity": "phone call to discuss finances", "date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
             {"activity": "cinema", "date": datetime(2021, 3, 26, tzinfo=timezone.utc)}
         ],
         "reminders": [],
@@ -19,12 +19,12 @@ contacts = [
     {
 	"id": 2,
         "name": "michael",
-        "surname": "jordan",
-        "nickname": "mortadella",
+        "surname": "scott",
+        "nickname": "",
         "birth_date": "",
         "activities": [
-            {"activity": "bar", "date": datetime(2021, 4, 5, 21, 0, tzinfo=timezone.utc)},
-            {"activity": "nada","date": datetime(2021, 4, 1, tzinfo=timezone.utc)}
+            {"activity": "paper sales pitch", "date": datetime(2021, 2, 5, 15, 0, tzinfo=timezone.utc)},
+            {"activity": "pizza","date": datetime(2021, 4, 1, tzinfo=timezone.utc)}
         ],
         "reminders": [],
         "relationships": set()
@@ -37,7 +37,7 @@ contacts = [
         "birth_date": "",
         "activities": [
             {"activity": "pizza", "date": datetime(2021, 4, 5, tzinfo=timezone.utc)},
-            {"activity": "cannelloni", "date": datetime(2021, 4, 2, tzinfo=timezone.utc)},
+            {"activity": "studying", "date": datetime(2021, 4, 2, tzinfo=timezone.utc)},
             {"activity": "tennis", "date": datetime(2021, 4, 1, tzinfo=timezone.utc)},
             {"activity": "bungee jumping", "date": datetime(2021, 3, 8, tzinfo=timezone.utc)},
             {"activity": "cinema", "date": datetime(2021, 2, 28, tzinfo=timezone.utc)},
